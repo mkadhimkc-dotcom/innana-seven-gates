@@ -2,10 +2,6 @@
 
 Exported 2026-09-17. Routines pick only from Ready. Each card line lists model, autopilot or needs-you, phase, dependencies, and estimate. Acceptance criteria follow each card.
 
-## Backlog
-
-Empty
-
 ## Ready (limit 8)
 
 Empty
@@ -19,6 +15,10 @@ Empty
 Empty
 
 ## Human QA (limit 3)
+
+Empty
+
+## Backlog
 
 Empty
 
