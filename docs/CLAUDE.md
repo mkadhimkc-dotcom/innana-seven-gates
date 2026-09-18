@@ -228,26 +228,56 @@ a level as far as Human QA and stops there.
 - **Move the card as you go**, and put the move in the same PR as the work
   (SPEC 50). The board and the branch never disagree.
 - **Humans merge PRs and run playtests.** Routines do not merge and do not mark
-  a playtest passed. Routines never certify a level card, or any card whose
-  estimate lists human hours — those go to Human QA and wait for a person
-  (SPEC 49).
-- **A `0 h human` card may only reach Certified on green CI.** Check the CI run
-  for that card's merge commit on `develop`. Move the card to Certified only if
-  that run has *completed* and is green. If it is red, or still in flight, leave
-  the card in **Ready** with a one-line note naming the failing job — for
-  example: `CI red on <sha>: Gameplay smoke test failed`. A run that has not
-  finished is not a pass, and neither is a green run on a different commit.
-
-  Certifying on an unverified claim is how a card with a broken acceptance
-  criterion gets marked done: F-02 was certified while the `Gameplay smoke test`
-  job had failed on every run since CI was added, because nobody read the run.
-  "It passes locally" is not this criterion.
+  a playtest passed.
+- **Finished work is routed by the Certification rules below**, not by the
+  card's estimate.
 - **Every level waits for playtests.** There is no fast path.
 - **When Human QA is full, skip level cards** and pick up non-level cards
   instead — systems, tools, art. This keeps testing pace with building rather
   than piling up unplayed levels.
 - **A blocked card goes to Validating**, with what is blocking it written on the
   card. It does not sit silently in Building.
+
+### Certification
+
+Where a finished card goes is decided by **what the card is**, not by what its
+estimate says. Check these in order and take the first match:
+
+1. **Level card → Human QA.** Only a human certifies a level, and only after
+   the three playtests pass (SPEC 48, 49). A routine takes a level as far as
+   Human QA and stops.
+
+2. **Card a person must physically do → Human QA.** Anything needing hardware,
+   a real device, or an account a routine cannot hold: the TV and controller
+   test, connecting a third-party account such as Cloudflare, store signup.
+   The routine does every part it can, then hands over.
+
+3. **Card that raises a decision or an open question for the owner →
+   Validating.** Append `| blocked: decision needed` to the card line, followed
+   by a one-line summary of the actual question. For example:
+
+   ```
+   - [ ] S-02 Player movement and feel | ... | blocked: decision needed
+     - Coyote time: 6 frames matches the reference games, 10 feels better on
+       touch. Which?
+   ```
+
+   A question the owner has not answered is never resolved by picking one and
+   certifying. State the question and stop.
+
+4. **Every other card → Certified**, once both hold: all its acceptance
+   criteria are met, and the CI run for its merge commit on `develop` has
+   **completed green**.
+
+   Read the run. A run still in flight is not a pass, and neither is a green
+   run on a different commit. If CI is red or unfinished, leave the card in
+   **Ready** with a one-line note naming the failing job — for example:
+   `CI red on <sha>: Gameplay smoke test failed`.
+
+   This is the rule F-02 was certified against and failed: its `Gameplay smoke
+   test` job had failed on every run since CI was added, and its own first
+   criterion says the commands pass locally *and in CI*. "It passes locally" is
+   not that criterion.
 
 ### Card format
 
