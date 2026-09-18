@@ -1,5 +1,24 @@
+import { execSync } from 'node:child_process';
 import { defineConfig } from 'vitest/config';
 import { VitePWA } from 'vite-plugin-pwa';
+
+/**
+ * The short commit SHA the running build was built from, so a stale service
+ * worker is visible rather than silent (shown in the menu, MenuScene.ts).
+ * Prefers the CI/host env var each build platform already sets — Cloudflare
+ * Pages' git-connected build (CF_PAGES_COMMIT_SHA) and GitHub Actions
+ * (GITHUB_SHA) both build in a shallow checkout where `git` may not see full
+ * history — and falls back to `git rev-parse` for local dev/build.
+ */
+function readBuildSha(): string {
+  const fromEnv = process.env['CF_PAGES_COMMIT_SHA'] ?? process.env['GITHUB_SHA'];
+  if (fromEnv) return fromEnv.slice(0, 7);
+  try {
+    return execSync('git rev-parse --short HEAD').toString().trim();
+  } catch {
+    return 'unknown';
+  }
+}
 
 /**
  * Build config. `npm run build` emits into `dist/`, which Cloudflare Pages
@@ -7,6 +26,9 @@ import { VitePWA } from 'vite-plugin-pwa';
  */
 export default defineConfig({
   base: './',
+  define: {
+    __BUILD_SHA__: JSON.stringify(readBuildSha()),
+  },
   build: {
     outDir: 'dist',
     target: 'es2022',
@@ -35,6 +57,11 @@ export default defineConfig({
         // The game is fully playable offline once installed (SPEC 2).
         globPatterns: ['**/*.{js,css,html,svg,woff2}'],
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
+        // A waiting worker takes over immediately instead of waiting for every
+        // tab to close, so `registerType: 'autoUpdate'`'s silent refresh
+        // actually serves the new build rather than the stale cached one.
+        skipWaiting: true,
+        clientsClaim: true,
       },
     }),
   ],

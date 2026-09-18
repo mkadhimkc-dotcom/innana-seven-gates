@@ -42,6 +42,18 @@ export class MenuScene extends Phaser.Scene {
     // No flashing (SPEC 32): a slow fade, well under the seizure-safety threshold.
     this.tweens.add({ targets: prompt, alpha: 0.35, duration: 1400, yoyo: true, repeat: -1 });
 
+    // So a stale service-worker build is visible rather than silent: which
+    // build is actually running, right on the menu (see vite.config.ts).
+    this.add
+      .text(width - 8, height - 8, `build ${__BUILD_SHA__}`, {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: '12px',
+        color: '#8fa4c9',
+      })
+      .setOrigin(1, 1)
+      .setAlpha(0.5)
+      .setName('build-sha');
+
     this.input.once('pointerdown', () => this.startFirstLevel());
     this.input.keyboard?.once('keydown-SPACE', () => this.startFirstLevel());
   }
