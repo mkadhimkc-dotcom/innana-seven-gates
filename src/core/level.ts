@@ -4,6 +4,11 @@
  * cannot read is a level that cannot be proven deadlock-free.
  */
 
+import Ajv2020, { type ErrorObject } from 'ajv/dist/2020.js';
+
+import { isGoal } from './board.js';
+import { applyMove, parseAction } from './state.js';
+import levelSchema from './level.schema.json' with { type: 'json' };
 import {
   TILE_CODES,
   comparePositions,
@@ -12,6 +17,7 @@ import {
   type DoorDefinition,
   type LevelDefinition,
   type Position,
+  type Routes,
   type Tile,
 } from './types.js';
 
@@ -20,6 +26,20 @@ export class LevelParseError extends Error {
     super(message);
     this.name = 'LevelParseError';
   }
+}
+
+/**
+ * One compiled validator for the whole process. This is the JSON Schema that
+ * defines the level file format (SPEC 9, 16, 52 Q25, 38-39); `parseLevel`
+ * checks every level against it before running the cross-field rules a JSON
+ * Schema cannot express (door/key pairing, in-bounds positions, a goal tile).
+ */
+const ajv = new Ajv2020({ allErrors: true });
+const validateSchema = ajv.compile(levelSchema);
+
+function describeSchemaError(error: ErrorObject): string {
+  const where = error.instancePath || '(root)';
+  return `${where}: ${error.message ?? 'does not match the level schema'}`;
 }
 
 interface RawPosition {
@@ -37,6 +57,9 @@ interface RawLevel {
   items?: unknown;
   doors?: unknown;
   timers?: unknown;
+  routes?: unknown;
+  criticalPath?: unknown;
+  seed?: unknown;
 }
 
 function fail(message: string): never {
@@ -111,8 +134,40 @@ function parseDoors(value: unknown): DoorDefinition[] {
   });
 }
 
+/** Read a route or the critical path: an array already schema-checked to hold only valid action tokens. */
+function readActionSequence(value: unknown): readonly string[] {
+  return (value as string[]) ?? [];
+}
+
+/**
+ * Replay a declared route or the critical path (SPEC 9, 52 Q25) through
+ * `applyMove`, the same rule the game and the validator use. An empty
+ * sequence is skipped — fixtures built to exercise a single rule are not
+ * expected to also carry a full solution — but a non-empty one must be legal
+ * end to end and land on the goal tile.
+ */
+function verifyRoute(level: LevelDefinition, actions: readonly string[], where: string): void {
+  if (actions.length === 0) return;
+  let state = initialState(level);
+  for (const [index, token] of actions.entries()) {
+    const next = applyMove(level, state, parseAction(token));
+    if (next === null) {
+      fail(`${where}[${index}]: "${token}" is not a legal move after the previous ${index} action(s)`);
+    }
+    state = next;
+  }
+  if (!isGoal(level, state)) {
+    fail(`${where}: ${actions.length} action(s) do not end on the goal tile (SPEC 9)`);
+  }
+}
+
 /** Parse untrusted JSON (a file, a fixture, an editor export) into a level. */
 export function parseLevel(input: unknown): LevelDefinition {
+  if (!validateSchema(input)) {
+    const [firstError] = validateSchema.errors ?? [];
+    fail(firstError ? describeSchemaError(firstError) : 'level: does not match the level schema');
+  }
+
   if (typeof input !== 'object' || input === null) fail('level: expected an object');
   const raw = input as RawLevel;
 
@@ -167,7 +222,16 @@ export function parseLevel(input: unknown): LevelDefinition {
   const standard = typeof timers['standard'] === 'number' ? timers['standard'] : 60;
   const expert = typeof timers['expert'] === 'number' ? timers['expert'] : 30;
 
-  return {
+  const rawRoutes = (raw.routes ?? {}) as Record<string, unknown>;
+  const routes: Routes = {
+    safe: readActionSequence(rawRoutes['safe']),
+    standard: readActionSequence(rawRoutes['standard']),
+    expert: readActionSequence(rawRoutes['expert']),
+  };
+  const criticalPath = readActionSequence(raw.criticalPath);
+  const seed = typeof raw.seed === 'number' ? raw.seed : 0;
+
+  const level: LevelDefinition = {
     id: raw.id,
     gate: raw.gate as number,
     name: raw.name,
@@ -179,7 +243,17 @@ export function parseLevel(input: unknown): LevelDefinition {
     items,
     doors,
     timers: { standard, expert },
+    routes,
+    criticalPath,
+    seed,
   };
+
+  verifyRoute(level, routes.safe, 'routes.safe');
+  verifyRoute(level, routes.standard, 'routes.standard');
+  verifyRoute(level, routes.expert, 'routes.expert');
+  verifyRoute(level, criticalPath, 'criticalPath');
+
+  return level;
 }
 
 /** The state the player starts a level in, before any move. */

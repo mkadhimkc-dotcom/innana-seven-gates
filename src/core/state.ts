@@ -141,3 +141,20 @@ export function describeMove(move: Move): string {
       return `drop:${move.itemId}`;
   }
 }
+
+/**
+ * Inverse of `describeMove`. Turns an action token from a level's `routes` or
+ * `criticalPath` (SPEC 9, 52 Q25) back into a `Move`, so the loader can replay
+ * a level's declared solution through the same `applyMove` the game and the
+ * validator use. Throws on a token that isn't one of the forms `describeMove`
+ * produces; the JSON schema's `action` pattern is expected to have already
+ * ruled out anything else.
+ */
+export function parseAction(token: string): Move {
+  if (token === 'pickup') return { type: 'pickup' };
+  if (token.startsWith('drop:')) return { type: 'drop', itemId: token.slice('drop:'.length) };
+  if (token === 'up' || token === 'down' || token === 'left' || token === 'right') {
+    return { type: 'move', direction: token };
+  }
+  throw new Error(`unknown action token "${token}"`);
+}

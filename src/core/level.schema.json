@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://inanna-seven-gates.example/level.schema.json",
+  "title": "LevelDefinition",
+  "description": "A single-room level (SPEC 9). The validator (SPEC 18-19) and the game both parse this shape through src/core/level.ts, so this schema is the one place the level file format is defined.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "gate",
+    "name",
+    "tiles",
+    "player",
+    "blocks",
+    "items",
+    "doors",
+    "timers",
+    "routes",
+    "criticalPath",
+    "seed"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Matches the filename and the src/level-registry.ts entry."
+    },
+    "gate": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 7,
+      "description": "Which of the seven gates this room belongs to (SPEC 6)."
+    },
+    "name": { "type": "string", "minLength": 1 },
+    "tiles": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Row-major room grid. Each row is a string of single-character tile codes (SPEC 9): '.' floor, '#' wall, '~' water, 'L' lava, '^' spike, 'G' goal.",
+      "items": { "type": "string", "pattern": "^[.#~L^G]+$" }
+    },
+    "player": { "$ref": "#/$defs/position" },
+    "blocks": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/position" },
+      "description": "Pushable block starting positions (SPEC 13)."
+    },
+    "items": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/item" }
+    },
+    "doors": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/door" }
+    },
+    "timers": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Standard and expert route time limits in seconds (SPEC 16). The safe route has no timer.",
+      "properties": {
+        "standard": { "type": "number", "exclusiveMinimum": 0 },
+        "expert": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "routes": { "$ref": "#/$defs/routes" },
+    "criticalPath": {
+      "$ref": "#/$defs/actionSequence",
+      "description": "The sequence of actions required to reach the goal (SPEC 9), answering SPEC 52 Q25."
+    },
+    "seed": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Base seed for this level's reproducible New Game+ variant placement (SPEC 38-39). Unrelated to the per-run seeds the validator and bots print to reproduce a dead state."
+    }
+  },
+  "$defs": {
+    "position": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y"],
+      "properties": {
+        "x": { "type": "integer", "minimum": 0 },
+        "y": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "at"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "kind": { "enum": ["key", "torch", "treasure"] },
+        "color": { "type": "string", "minLength": 1 },
+        "at": { "$ref": "#/$defs/position" }
+      }
+    },
+    "door": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "color", "at"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "color": { "type": "string", "minLength": 1 },
+        "at": { "$ref": "#/$defs/position" }
+      }
+    },
+    "action": {
+      "type": "string",
+      "description": "One player action, in src/core/state.ts describeMove/parseAction form: 'up' | 'down' | 'left' | 'right' | 'pickup' | 'drop:<itemId>'.",
+      "pattern": "^(up|down|left|right|pickup|drop:.+)$"
+    },
+    "actionSequence": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/action" }
+    },
+    "routes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["safe", "standard", "expert"],
+      "description": "The three routes every level offers (SPEC 9, 16). Optional treasure is never on any of them (SPEC 9).",
+      "properties": {
+        "safe": { "$ref": "#/$defs/actionSequence" },
+        "standard": { "$ref": "#/$defs/actionSequence" },
+        "expert": { "$ref": "#/$defs/actionSequence" }
+      }
+    }
+  }
+}

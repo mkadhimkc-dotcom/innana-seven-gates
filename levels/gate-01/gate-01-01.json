@@ -21,5 +21,36 @@
   "doors": [
     { "id": "door-lapis", "color": "lapis", "at": { "x": 4, "y": 6 } }
   ],
-  "timers": { "standard": 60, "expert": 30 }
+  "timers": { "standard": 60, "expert": 30 },
+  "routes": {
+    "safe": [
+      "right", "right", "right", "right", "right", "right",
+      "pickup",
+      "down", "down", "down", "down", "down", "down",
+      "left", "left", "left",
+      "up", "up", "up"
+    ],
+    "standard": [
+      "right", "right", "right", "right", "right", "right",
+      "pickup",
+      "down", "down", "down", "down", "down", "down",
+      "left", "left", "left",
+      "up", "up", "up"
+    ],
+    "expert": [
+      "right", "right", "right", "right", "right", "right",
+      "pickup",
+      "down", "down", "down", "down", "down", "down",
+      "left", "left", "left",
+      "up", "up", "up"
+    ]
+  },
+  "criticalPath": [
+    "right", "right", "right", "right", "right", "right",
+    "pickup",
+    "down", "down", "down", "down", "down", "down",
+    "left", "left", "left",
+    "up", "up", "up"
+  ],
+  "seed": 10101
 }
