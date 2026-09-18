@@ -27,11 +27,6 @@ Empty
   - JSON Schema covers rooms, tiles, entities, safe, standard, and expert routes, critical path, and seed
   - The loader rejects a malformed level with a message naming the problem
   - Game and validator import the same model
-- [ ] F-04 Playable build on your phone after every merge | model: sonnet | autopilot | Foundation card | phase 1 | deps: F-02 | est: 15K tokens, 0.5 Claude h, 0.5 h human
-  - Every merge to develop deploys automatically
-  - Stays inside the free plan's 500 builds a month
-  - You connect a free Cloudflare account once
-  - Lands in Human QA: connecting the Cloudflare account and adding the two repo secrets in docs/deploy-cloudflare.md needs you
 
 ## Backlog
 
@@ -465,3 +460,7 @@ Empty
   - npm test, npm run e2e, and npm run build work locally and in CI
   - Browser tests run at a phone-sized landscape viewport
   - Everything also passes in the Claude Code cloud environment routines use
+- [x] F-04 Playable build on your phone after every merge | model: sonnet | autopilot | Foundation card | phase 1 | deps: F-02 | est: 15K tokens, 0.5 Claude h, 0.5 h human
+  - Every merge to develop deploys automatically — Cloudflare Pages connected directly to the repo (production branch develop, build command npm run build, output directory dist, NODE_VERSION 22); live at https://innana-seven-gates.pages.dev/
+  - Free plan, git-connected build (see docs/deploy-cloudflare.md for the build-count caveat and the unused direct-upload alternative already sitting in CI)
+  - You connected a free Cloudflare account

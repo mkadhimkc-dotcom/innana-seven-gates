@@ -1,5 +1,24 @@
 # Deploying to Cloudflare Pages (SPEC 51, card F-04)
 
+**Status: done.** Cloudflare Pages is connected directly to this repo —
+production branch `develop`, build command `npm run build`, output directory
+`dist`, `NODE_VERSION` 22. Every merge to `develop` deploys automatically.
+
+**Live:** <https://innana-seven-gates.pages.dev/>
+
+This is Cloudflare's own git-connected build pipeline, not the Wrangler
+direct-upload path this doc originally specified (below). That path counts
+each deploy against the free plan's 500 **builds**/month; the direct-upload
+alternative in `.github/workflows/ci.yml` (job `deploy`) does not, and stays
+in the workflow as a dormant, unused alternative — it no-ops with a warning
+because `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` were never added as
+repo secrets, per the design below. Switching to it later just means adding
+those two secrets and removing the git-connected build from the Cloudflare
+dashboard, so builds stop being double-counted.
+
+<details>
+<summary>Original design: Wrangler direct upload via GitHub Actions</summary>
+
 Every push to `develop` builds the game and, once you've done the one-time
 setup below, publishes it to Cloudflare Pages automatically. The deploy job
 (`.github/workflows/ci.yml`, job `deploy`) only runs after the `test` and
@@ -12,7 +31,7 @@ pipeline. GitHub Actions builds the app and hands Cloudflare the finished
 means these deploys don't count against the free plan's 500 **builds**/month
 at all — direct uploads are a separate, much higher limit.
 
-## One-time setup (you, not a routine)
+## One-time setup (you, not a routine) — not the path actually used
 
 1. **Create a free Cloudflare account** at <https://dash.cloudflare.com/sign-up>
    if you don't already have one.
@@ -45,8 +64,6 @@ That's it. The next push to `develop` deploys. Until these secrets exist, the
 `deploy` job detects that and skips itself with a warning instead of failing,
 so it never blocks CI or certification.
 
-## Staying inside the free plan
-
 - The deploy job only triggers on `push` to `develop` — not on `claude/**`
   branches and not on pull requests — so routine work-in-progress never
   deploys.
@@ -54,10 +71,21 @@ so it never blocks CI or certification.
   limit, so there's effectively no volume concern for how often `develop`
   merges.
 
+</details>
+
+## Staying inside the free plan (the path actually in use)
+
+Cloudflare's git-connected build **is** metered by the 500 builds/month limit
+— every push to `develop` counts. Cards merge here far less often than that,
+so this hasn't been a concern in practice; revisit if merge volume ever climbs
+enough to make 500/month tight, by adding the two repo secrets above and
+switching to the direct-upload job instead.
+
 ## Rollback (SPEC 51)
 
-Revert the offending commit on `develop` and push. That produces a new green
-build, which the `deploy` job publishes the same way.
+Revert the offending commit on `develop` and push. Cloudflare's git
+integration builds and publishes the new HEAD the same way it does every
+other push.
 
 ## Custom domain (optional, not part of F-04)
 

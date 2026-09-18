@@ -6,6 +6,13 @@ mirroring and Bluetooth controller support.
 Its promise is the **deadlock-free guarantee**: every puzzle is always solvable.
 No undo button, no soft-lock traps. A validator proves it before you play.
 
+## Play it
+
+**Live:** <https://innana-seven-gates.pages.dev/>
+
+Every merge to `develop` deploys automatically (SPEC 51, card F-04). See
+[`docs/deploy-cloudflare.md`](docs/deploy-cloudflare.md).
+
 ## Documents
 
 | File | What it is |
