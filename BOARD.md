@@ -8,6 +8,33 @@ Exported 2026-09-18. Routines pick only from Ready. Each card line lists model, 
   - Fixed timestep: the same inputs always produce the same state
   - Collision edge cases covered by unit tests
   - Camera follows the player across room transitions
+- [ ] T-01 Solvability validator v1 | model: opus | autopilot | Tooling card | phase 1 | deps: F-03 | est: 65K tokens, 1.5 Claude h, 0 h human
+  - Builds the state graph from location, inventory, and switch states
+  - npm run validate fails if any reachable state can no longer reach the exit
+  - The report names each dead state with a seed to reproduce it
+- [ ] P-04 Install to home screen, offline play, and saves | model: sonnet | autopilot | Platform card | phase 1 | deps: F-02 | est: 20K tokens, 0.5 Claude h, 0.5 h human
+  - Installs from Safari and opens full-screen in landscape
+  - Plays with no connection
+  - Progress survives closing the app
+- [ ] P-01 Input layer for touch, controller, and keyboard | model: sonnet | autopilot | Platform card | phase 1 | deps: S-01 | est: 25K tokens, 0.5 Claude h, 0 h human
+  - All gameplay reads actions, not raw input
+  - Remapping is saved per device
+- [ ] A-01 Code-drawn art and palettes | model: sonnet | autopilot | Art card | phase 1 | deps: S-01 | est: 50K tokens, 1 Claude h, 1 h human
+  - Player, tiles, and props packed into one texture atlas
+  - Palettes swap at runtime, ready for New Game+
+  - You sign off on the art direction
+- [ ] S-02 Player movement and feel | model: opus | autopilot | Systems card | phase 1 | deps: S-01, P-01 | est: 50K tokens, 1.5 Claude h, 2 h human
+  - Coyote time, jump buffer, variable jump height, and ladder climbing
+  - Every feel value lives in one tunables file
+  - Frame-exact tests for the timing windows
+- [ ] P-02 Touch controls | model: sonnet | autopilot | Platform card | phase 1 | deps: P-01 | est: 35K tokens, 0.5 Claude h, 1 h human
+  - Move and jump work at the same time
+  - No page scroll, zoom, or text selection during play
+  - Size, opacity, and left-handed layout options
+- [ ] P-03 Controller support | model: sonnet | autopilot | Platform card | phase 1 | deps: P-01 | est: 25K tokens, 0.5 Claude h, 0.5 h human
+  - Xbox and PlayStation controllers work on your phone
+  - Disconnecting mid-game pauses safely
+  - Every menu works without touching the screen
 
 ## Building (limit 2)
 
@@ -30,29 +57,10 @@ Empty
 
 ## Backlog
 
-- [ ] P-01 Input layer for touch, controller, and keyboard | model: sonnet | autopilot | Platform card | phase 1 | deps: S-01 | est: 25K tokens, 0.5 Claude h, 0 h human
-  - All gameplay reads actions, not raw input
-  - Remapping is saved per device
-- [ ] P-02 Touch controls | model: sonnet | autopilot | Platform card | phase 1 | deps: P-01 | est: 35K tokens, 0.5 Claude h, 1 h human
-  - Move and jump work at the same time
-  - No page scroll, zoom, or text selection during play
-  - Size, opacity, and left-handed layout options
-- [ ] P-03 Controller support | model: sonnet | autopilot | Platform card | phase 1 | deps: P-01 | est: 25K tokens, 0.5 Claude h, 0.5 h human
-  - Xbox and PlayStation controllers work on your phone
-  - Disconnecting mid-game pauses safely
-  - Every menu works without touching the screen
-- [ ] S-02 Player movement and feel | model: opus | autopilot | Systems card | phase 1 | deps: S-01, P-01 | est: 50K tokens, 1.5 Claude h, 2 h human
-  - Coyote time, jump buffer, variable jump height, and ladder climbing
-  - Every feel value lives in one tunables file
-  - Frame-exact tests for the timing windows
 - [ ] S-03 Core mechanics | model: sonnet | autopilot | Systems card | phase 1 | deps: S-02, F-03 | est: 55K tokens, 1 Claude h, 0 h human
   - Every entity is placed and configured from level data
   - Each interaction has a unit test
   - Required and optional treasure are tracked separately
-- [ ] T-01 Solvability validator v1 | model: opus | autopilot | Tooling card | phase 1 | deps: F-03 | est: 65K tokens, 1.5 Claude h, 0 h human
-  - Builds the state graph from location, inventory, and switch states
-  - npm run validate fails if any reachable state can no longer reach the exit
-  - The report names each dead state with a seed to reproduce it
 - [ ] S-04 Checkpoints, safe saves, and room reset | model: opus | autopilot | Systems card | phase 1 | deps: S-03, T-01 | est: 55K tokens, 1.5 Claude h, 0 h human
   - A checkpoint saves only if the exit is still reachable from that state
   - Restart room and restart from checkpoint are always available
@@ -68,18 +76,10 @@ Empty
   - Return to last safe position appears only when the player is truly trapped
   - Required items lost out of reach return to where they started
   - Bot runs can't produce a softlock in the test rooms
-- [ ] A-01 Code-drawn art and palettes | model: sonnet | autopilot | Art card | phase 1 | deps: S-01 | est: 50K tokens, 1 Claude h, 1 h human
-  - Player, tiles, and props packed into one texture atlas
-  - Palettes swap at runtime, ready for New Game+
-  - You sign off on the art direction
 - [ ] U-01 Menus, HUD, pause, and settings | model: sonnet | autopilot | Platform card | phase 1 | deps: P-02, P-03 | est: 40K tokens, 0.5 Claude h, 0.5 h human
   - Every screen works with only touch or only a controller
   - Respects safe areas and locks to landscape
   - Text stays legible on a TV
-- [ ] P-04 Install to home screen, offline play, and saves | model: sonnet | autopilot | Platform card | phase 1 | deps: F-02 | est: 20K tokens, 0.5 Claude h, 0.5 h human
-  - Installs from Safari and opens full-screen in landscape
-  - Plays with no connection
-  - Progress survives closing the app
 - [ ] P-05 Phone performance budget | model: opus | autopilot | Platform card | phase 1 | deps: S-03, A-01 | est: 30K tokens, 1 Claude h, 0.5 h human
   - Holds 60 fps in the busiest test room on your phone
   - A frame-time check runs in CI
