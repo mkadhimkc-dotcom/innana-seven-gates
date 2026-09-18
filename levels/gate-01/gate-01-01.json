@@ -14,7 +14,7 @@
     "#########"
   ],
   "player": { "x": 1, "y": 1 },
-  "blocks": [],
+  "blocks": [{ "x": 3, "y": 7 }],
   "items": [
     { "id": "key-lapis", "kind": "key", "color": "lapis", "at": { "x": 7, "y": 1 } }
   ],
