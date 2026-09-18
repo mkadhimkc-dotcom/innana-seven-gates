@@ -146,6 +146,45 @@ Pages build, `main` carries releases only, rollback is a revert and a push.
 Cloudflare builds from the same `npm run build`, so the artifact CI verified is
 the artifact that ships.
 
+## Decision 5: Input architecture
+
+**Every input device translates into a shared `Intent` vocabulary. Gameplay
+reads intents; nothing reads a raw device event.**
+
+SPEC asks for three input methods driving the same actions: touch (SPEC 27),
+Bluetooth Xbox and PlayStation controllers (SPEC 28), and keyboard as
+debug-only, excluded from release builds (SPEC 29).
+
+```
+touch    ┐
+gamepad  ├─→ Intent ──→ LevelScene ──→ src/core/state.ts  (decides legality)
+keyboard ┘
+```
+
+`src/input/intents.ts` defines the vocabulary — `move`, `act`, `drop`,
+`toggleInventory`, `restartFromCheckpoint`, `pause` — and each device module
+implements one `InputSource` that emits it. `LevelScene` turns an intent into a
+`Move` and asks `src/core/` whether it is legal.
+
+**Why not let each device drive the rules directly.** Three devices talking to
+gameplay means three places that answer "can the player do this", which
+contradicts Decision 1's engine-free core: the validator would be proving
+properties of a rule set the game does not entirely use. One vocabulary keeps
+the answer in one place.
+
+It also makes three things in SPEC cheap that would otherwise be invasive:
+per-device remapping (card P-01) is a table edit, not a gameplay change; the
+assists in SPEC 35 attach to intents rather than to device handlers; and SPEC
+29's "keyboard is debug-only" is one guarded `attach` call, not a build-wide
+concern.
+
+**Costs.** An intent layer adds indirection for a game with six verbs, and
+device-specific feel — touch gesture thresholds, controller dead zones — has to
+live in the device modules rather than near the gameplay that consumes it. Held
+buttons need debouncing per device so one press produces one intent.
+
+Recorded as D-003 in `docs/DECISIONS.md`.
+
 ## Consequences
 
 **Good**

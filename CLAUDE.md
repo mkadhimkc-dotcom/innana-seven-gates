@@ -3,8 +3,15 @@
 Every session reads this file first. It encodes the deadlock rules, the
 Definition of Done, and the board workflow.
 
+**If you are running a lane, follow [`docs/LANE.md`](docs/LANE.md).** That is
+the operating procedure — how to start from a known commit, keep `develop`
+green, keep the queue full, pick a card, prove it, merge it, and certify it.
+This file is the rules a lane works within; LANE.md is the order it does things
+in.
+
 `docs/SPEC.md` is the source of truth. Where this file and SPEC disagree, SPEC
-wins and this file is the bug. Section numbers below refer to SPEC.
+wins and this file is the bug — except where `docs/DECISIONS.md` records the
+owner deciding otherwise. Section numbers below refer to SPEC.
 
 ---
 
@@ -202,8 +209,11 @@ dead states, the block deadlock detector passes where applicable, the
 critical-path doc is complete and accurate, and difficulty is within the gate's
 target range.
 
-**Routines cannot certify a level.** Items 5 and 6 need a human. A routine takes
-a level as far as Human QA and stops there.
+**A lane certifies levels too**, under LANE step 10 — see the Certification
+rule below. Item 5's three playtests no longer gate certification; the level is
+appended to `docs/PLAYTEST-QUEUE.md` for the owner to play afterwards. This is
+an owner decision that overrides SPEC 20 item 5 and SPEC 49; it is recorded as
+D-004 in `docs/DECISIONS.md`, with what it costs and how to reverse it.
 
 ---
 
@@ -230,57 +240,46 @@ read and write the root file. Six columns, with work-in-progress limits:
   column means finish something, not start something.
 - **Move the card as you go**, and put the move in the same PR as the work
   (SPEC 50). The board and the branch never disagree.
-- **Humans merge PRs and run playtests.** Routines do not merge and do not mark
-  a playtest passed.
+- **Follow [`docs/LANE.md`](docs/LANE.md).** It is the order of operations; the
+  rules here are what it works within.
 - **Finished work is routed by the Certification rule below**, not by the
   card's estimate.
-- **Every level waits for playtests.** There is no fast path.
+- **Playtests follow certification, they do not gate it.** A certified level is
+  appended to `docs/PLAYTEST-QUEUE.md` and the lane moves on.
 - **When Human QA is full, skip level cards** and pick up non-level cards
   instead — systems, tools, art. This keeps testing pace with building rather
   than piling up unplayed levels.
 - **A blocked card goes to Validating**, with what is blocking it written on the
   card. It does not sit silently in Building.
 
-### Certification rule
+### Certification rule (LANE step 10)
 
-Where a finished card goes is decided by **what the card is**, not by what its
-estimate says. Check these in order and take the first match:
+When a card's acceptance criteria are met **and** the GitHub Actions run for its
+merge commit on `develop` has finished green, move the card to **Certified**.
 
-1. **Level card → Human QA.** Only a human certifies a level, and only after
-   the three playtests pass (SPEC 48, 49). A routine takes a level as far as
-   Human QA and stops.
+Read the run. A run still in flight is not a pass, and neither is a green run on
+a different commit. If CI is red or still running, leave the card in **Ready**
+with a one-line note naming the failing job — for example:
+`CI red on <sha>: Gameplay smoke test failed`.
 
-2. **Card a person must physically do → Human QA.** Anything needing hardware,
-   a real device, or an account a routine cannot hold: the TV and controller
-   test, connecting a third-party account such as Cloudflare, store signup.
-   The routine does every part it can, then hands over.
+This includes **level cards**, provided all four hold:
 
-3. **Card that raises a decision or an open question for the owner →
-   Validating.** Append `| blocked: decision needed` to the card line, followed
-   by a one-line summary of the actual question. For example:
+- the validator reports no dead states,
+- the bots find no softlock,
+- the level is inside its gate's difficulty target (SPEC 25), and
+- `docs/playtests/<card-id>.md` exists.
 
-   ```
-   - [ ] S-02 Player movement and feel | ... | blocked: decision needed
-     - Coyote time: 6 frames matches the reference games, 10 feels better on
-       touch. Which?
-   ```
+Append every certified level to `docs/PLAYTEST-QUEUE.md` as an unchecked line.
+**That queue never blocks the pipeline** — it records what the owner may play,
+it is not a gate a lane waits on.
 
-   A question the owner has not answered is never resolved by picking one and
-   certifying. State the question and stop.
+Two things still stop a lane rather than being certified by it:
 
-4. **Every other card → Certified**, once both hold: all its acceptance
-   criteria are met, and the **GitHub Actions run for its merge commit on
-   `develop` has finished green**.
-
-   Read the run. A run still in flight is not a pass, and neither is a green
-   run on a different commit. If CI is red or still running, leave the card in
-   **Ready** with a one-line note naming the failing job — for example:
-   `CI red on <sha>: Gameplay smoke test failed`.
-
-   This is the rule F-02 was certified against and failed: its `Gameplay smoke
-   test` job had failed on every run since CI was added, and its own first
-   criterion says the commands pass locally *and in CI*. "It passes locally" is
-   not that criterion.
+- **Something only a person can do** — creating an account, paying, a physical
+  device, a credential. Append click-by-click steps to `HUMAN.md`, then pick a
+  different card (LANE step 12).
+- **Nothing else.** A SPEC ambiguity is resolved by the lane and written into
+  `docs/DECISIONS.md` (LANE step 11), never parked for the owner's opinion.
 
 ### Card format
 

@@ -1,6 +1,6 @@
 # Inanna: Seven Gates board
 
-Exported 2026-09-18. Routines pick only from Ready. Each card line lists model, autopilot or needs-you, phase, dependencies, and estimate. Acceptance criteria follow each card.
+Exported 2026-09-18. Lanes follow docs/LANE.md and pick only from Ready. Ready is refilled to 8 cards whenever **Ready** holds fewer than 3 — not when Backlog does. Cards move into Ready in dependency order, and a dependency counts as met once its work is **merged**, that is, once the card it depends on sits in Human QA or Certified. Each card line lists model, autopilot or needs-you, phase, dependencies, and estimate. Acceptance criteria follow each card.
 
 ## Ready (limit 8)
 
@@ -46,10 +46,6 @@ Empty
 
 ## Human QA (limit 3)
 
-- [ ] F-01 Architecture decision and CLAUDE.md rules | model: opus | autopilot | Foundation card | phase 1 | deps: none | est: 40K tokens, 1 Claude h, 1 h human
-  - Decision record covers engine, input, level model, and test strategy
-  - CLAUDE.md encodes the deadlock rules from docs/SPEC.md, the Definition of Done, and the board workflow
-  - Lands in Human QA for your review while build cards continue
 - [ ] F-03 Level data schema and loader | model: opus | autopilot | Foundation card | phase 1 | deps: F-01 | est: 35K tokens, 1 Claude h, 0.5 h human
   - JSON Schema covers rooms, tiles, entities, safe, standard, and expert routes, critical path, and seed
   - The loader rejects a malformed level with a message naming the problem
@@ -464,3 +460,7 @@ Empty
   - Every merge to develop deploys automatically — Cloudflare Pages connected directly to the repo (production branch develop, build command npm run build, output directory dist, NODE_VERSION 22); live at https://innana-seven-gates.pages.dev/
   - Free plan, git-connected build (see docs/deploy-cloudflare.md for the build-count caveat and the unused direct-upload alternative already sitting in CI)
   - You connected a free Cloudflare account
+- [x] F-01 Architecture decision and CLAUDE.md rules | model: opus | autopilot | Foundation card | phase 1 | deps: none | est: 40K tokens, 1 Claude h, 1 h human
+  - Decision record covers engine, input, level model, and test strategy
+  - CLAUDE.md encodes the deadlock rules from docs/SPEC.md, the Definition of Done, and the board workflow
+  - Lands in Human QA for your review while build cards continue

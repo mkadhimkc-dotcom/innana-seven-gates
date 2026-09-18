@@ -17,7 +17,19 @@ those two secrets and removing the git-connected build from the Cloudflare
 dashboard, so builds stop being double-counted.
 
 <details>
-<summary>Original design: Wrangler direct upload via GitHub Actions</summary>
+<summary>Original design: Wrangler direct upload via GitHub Actions (removed from CI — see note)</summary>
+
+> **Removed 2026-09-18.** The `deploy` job that implemented this was deleted from
+> `.github/workflows/ci.yml`. It referenced `cloudflare/pages-action`, which
+> Cloudflare has retired, so GitHub could not resolve the action and the job
+> failed at *Set up job* on every push to `develop` — turning CI red regardless
+> of whether the secrets it guarded were set. The per-step
+> `if: steps.check.outputs.configured == 'true'` guards could not prevent this:
+> Actions resolves every `uses:` reference before any step's `if` is evaluated.
+> The live deploy never went through this job anyway. If direct upload is ever
+> wanted, rebuild it on `cloudflare/wrangler-action` and verify the job resolves
+> before merging.
+
 
 Every push to `develop` builds the game and, once you've done the one-time
 setup below, publishes it to Cloudflare Pages automatically. The deploy job
@@ -79,7 +91,7 @@ Cloudflare's git-connected build **is** metered by the 500 builds/month limit
 — every push to `develop` counts. Cards merge here far less often than that,
 so this hasn't been a concern in practice; revisit if merge volume ever climbs
 enough to make 500/month tight, by adding the two repo secrets above and
-switching to the direct-upload job instead.
+switching to direct upload instead — which now means writing that job again, since the broken one was removed (see the collapsed section above).
 
 ## Rollback (SPEC 51)
 

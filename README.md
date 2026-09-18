@@ -19,6 +19,10 @@ Every merge to `develop` deploys automatically (SPEC 51, card F-04). See
 | --- | --- |
 | [`docs/SPEC.md`](docs/SPEC.md) | The game design document. The source of truth. |
 | [`CLAUDE.md`](CLAUDE.md) | Build rules every Claude session reads first. |
+| [`docs/LANE.md`](docs/LANE.md) | The operating procedure every autonomous lane follows. |
+| [`docs/DECISIONS.md`](docs/DECISIONS.md) | SPEC ambiguities resolved, with reasoning and how to reverse each. |
+| [`HUMAN.md`](HUMAN.md) | Things only you can do. Empty means nothing is waiting on you. |
+| [`docs/PLAYTEST-QUEUE.md`](docs/PLAYTEST-QUEUE.md) | Certified levels waiting for you to play. Never blocks the pipeline. |
 | [`docs/adr/ADR-001-architecture.md`](docs/adr/ADR-001-architecture.md) | Stack, structure, commands, CI. |
 | [`docs/deploy-cloudflare.md`](docs/deploy-cloudflare.md) | One-time Cloudflare Pages setup for automatic deploys (SPEC 51). |
 | [`BOARD.md`](BOARD.md) | The Scrumban board routines pull cards from. |
