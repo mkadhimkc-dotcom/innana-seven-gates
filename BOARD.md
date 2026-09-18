@@ -9,16 +9,6 @@ Exported 2026-09-18. Lanes follow docs/LANE.md and pick only from Ready. Ready i
   - Collision edge cases covered by unit tests
   - Camera follows the player across room transitions
   > SLICE (not a criterion): claude/slice-01 delivered the fixed camera fitting one room to the viewport and tile collision through src/core. Still open: the fixed-timestep loop and room transitions.
-- [ ] T-01 Solvability validator v1 | model: opus | autopilot | Tooling card | phase 1 | deps: F-03 | est: 65K tokens, 1.5 Claude h, 0 h human
-  - Builds the state graph from location, inventory, and switch states
-  - npm run validate fails if any reachable state can no longer reach the exit
-  - The report names each dead state with a seed to reproduce it
-  > NOTE (not a criterion): switch states do not exist in the engine yet — there
-  > are no switches or pressure plates in src/core/. Criteria 2 and 3 are already
-  > met by the validator built under F-01. Criterion 1 cannot be, so **T-01 must
-  > not be certified** until switches are implemented or the owner re-scopes the
-  > card. A lane that picks it up applies LANE step 11: move it to Validating
-  > with "| blocked: scope" rather than certifying around the gap.
 - [ ] P-04 Install to home screen, offline play, and saves | model: sonnet | autopilot | Platform card | phase 1 | deps: F-02 | est: 20K tokens, 0.5 Claude h, 0.5 h human
   - Installs from Safari and opens full-screen in landscape
   - Plays with no connection
@@ -52,7 +42,11 @@ Empty
 
 ## Validating (limit 3)
 
-Empty
+- [ ] T-01 Solvability validator v1 | model: opus | autopilot | Tooling card | phase 1 | deps: F-03 | est: 65K tokens, 1.5 Claude h, 0 h human | blocked: scope
+  - Builds the state graph from location, inventory, and switch states
+  - npm run validate fails if any reachable state can no longer reach the exit
+  - The report names each dead state with a seed to reproduce it
+  - Criterion 1 wants switch states in the state graph; the engine has no switches or pressure plates. Needs switches implemented, or the card re-scoped by the owner.
 
 ## Human QA (limit 3)
 
