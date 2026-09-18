@@ -54,7 +54,32 @@ Take the **first** card in Ready whose line includes **`model: MODEL`** and
 **`autopilot`**, and whose dependencies are all merged (in Human QA or
 Certified).
 
-If no card qualifies, reply **"No eligible card"** and stop.
+If no card qualifies, do not stop yet — widen the search per step 6b below.
+Only when that finds nothing either do you reply **"No eligible card"** and
+stop.
+
+## 6b. If nothing matches MODEL, widen — except for Level cards
+
+Before replying "No eligible card", look again without the model filter: take
+the **first eligible `autopilot` card of any model** whose dependencies are all
+merged.
+
+**Level cards are the exception.** A card whose type is `Level card` keeps its
+assigned model — do not pick one up for a different lane.
+
+Why the rest widen: the path to a playable build is almost entirely `sonnet`
+cards, so a strict model filter leaves the `opus` lane idle for days while the
+work it could do sits in Ready. An idle lane is worse than a lane doing
+sonnet-tagged systems work.
+
+Why levels do not: a level's model is a difficulty judgement, not a scheduling
+hint — the board assigns `opus` to the later gates because the puzzles are
+harder to design and to prove. Handing a Gate VI level to a lighter model
+produces a level that validates and still is not worth playing, and nothing in
+the pipeline catches that (D-004).
+
+Say in the run report when you widened, and which model the card was tagged
+for.
 
 ## 7. Work the card
 
