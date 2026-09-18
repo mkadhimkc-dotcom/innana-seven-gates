@@ -80,6 +80,10 @@ Merge into `develop`, push, and **wait for that merge commit's Actions run to
 finish green**. A run still in flight is not a pass, and a green run on a
 different commit is not this commit's run.
 
+**Never report a result you have not watched.** If the run has not finished by
+the end of the lane's time, say so and say which job was still going. A guessed
+green is worse than an honest unknown, because the next lane builds on it.
+
 ## 10. Certification
 
 When the acceptance criteria are met and CI on the merge commit is green, move
@@ -96,7 +100,26 @@ Every certified level is appended to `docs/PLAYTEST-QUEUE.md` as an unchecked
 line. **That queue never blocks the pipeline** — it is a record of what the
 owner may play, not a gate the lane waits on.
 
-## 11. Decisions
+## 11. Scope: do not certify around a gap
+
+If a card's acceptance criteria describe something **the codebase cannot yet
+support**, do not quietly satisfy the criteria you can and certify the card.
+
+Say so in the run report, and move the card to **Validating** with
+`| blocked: scope` appended to its line and one line naming the gap. For
+example:
+
+```
+- [ ] T-01 Solvability validator v1 | ... | blocked: scope
+  - Criterion 1 wants switch states in the state graph; the engine has no
+    switches yet. Needs switches implemented, or the card re-scoped.
+```
+
+This is the one case where partial work must not be dressed as done. A card
+certified around a missing feature hides the gap behind a green tick, and the
+next card to depend on it inherits a promise nothing keeps.
+
+## 12. Decisions
 
 If `docs/SPEC.md` is ambiguous, **resolve it against the spec yourself** and
 carry on. Record in `docs/DECISIONS.md`:
@@ -108,7 +131,7 @@ carry on. Record in `docs/DECISIONS.md`:
 **Never park a card waiting for the owner's opinion.** An unmade decision costs
 the project more than a wrong one that is written down and reversible.
 
-## 12. The only reason to stop for the owner
+## 13. The only reason to stop for the owner
 
 Something a machine cannot do: creating an account, paying for something, using
 a physical device, or supplying a credential.
@@ -116,13 +139,33 @@ a physical device, or supplying a credential.
 When you hit one, append **click-by-click steps** to `HUMAN.md`, then **pick a
 different card and keep going**. The lane does not idle.
 
-## 13. Never
+## 14. After a successful certify: move the rollback point
 
-- Never push to `main`.
+Once a card is certified and CI on that commit is green, **fast-forward `main`
+to `develop`** and tag the commit `green-YYYY-MM-DD`.
+
+```bash
+git fetch origin develop main
+git checkout main && git merge --ff-only origin/develop
+git tag green-$(date -u +%F) && git push origin main --tags
+```
+
+Fast-forward only. If it will not fast-forward, stop and report it — `main` has
+diverged and that is a fact the owner needs, not something to force past.
+
+This is the rollback point SPEC 51 assumes exists. Production builds from
+`develop`, so without this there is no known-good commit to revert *to*; the
+tag is what makes "revert and push" a real option rather than an archaeology
+exercise.
+
+## 15. Never
+
+- Never force-push. Not to `develop`, not to `main`, not to a `claude/**`
+  branch someone else may have checked out.
 - Never edit `docs/SPEC.md`.
 - Never edit a card's acceptance criteria.
 
-## 14. End every run with
+## 16. End every run with
 
 1. The SHA you worked from
 2. The card id
@@ -135,7 +178,7 @@ different card and keep going**. The lane does not idle.
 
 ## MODEL = haiku: the sweep lane
 
-Steps 1 to 5 and 11 to 14 apply unchanged. **Replace steps 6 to 10** with:
+Steps 1 to 5 and 11 to 16 apply unchanged. **Replace steps 6 to 10** with:
 
 Run `npm run validate` and `npm run bots` across **every** level, then write
 `reports/sweep-YYYY-MM-DD.md` containing:
