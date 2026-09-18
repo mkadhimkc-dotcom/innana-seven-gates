@@ -13,5 +13,8 @@
   "blocks": [{ "x": 2, "y": 2 }],
   "items": [],
   "doors": [],
-  "timers": { "standard": 60, "expert": 30 }
+  "timers": { "standard": 60, "expert": 30 },
+  "routes": { "safe": [], "standard": [], "expert": [] },
+  "criticalPath": [],
+  "seed": 0
 }

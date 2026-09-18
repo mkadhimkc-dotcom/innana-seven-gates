@@ -20,6 +20,7 @@
     "ci": "npm run typecheck && npm test && npm run validate && npm run build"
   },
   "dependencies": {
+    "ajv": "^8.20.0",
     "phaser": "^3.90.0"
   },
   "devDependencies": {

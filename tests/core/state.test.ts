@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyMove, candidateMoves, encodeState } from '../../src/core/state.js';
+import { applyMove, candidateMoves, describeMove, encodeState, parseAction } from '../../src/core/state.js';
 import { initialState, parseLevel } from '../../src/core/level.js';
 import { isGoal } from '../../src/core/board.js';
 import type { GameState, LevelDefinition, Move } from '../../src/core/types.js';
@@ -143,5 +143,22 @@ describe('state encoding', () => {
     const holding = play(level, initialState(level), [right, right, { type: 'pickup' }]);
     const drops = candidateMoves(holding).filter((move) => move.type === 'drop');
     expect(drops).toEqual([{ type: 'drop', itemId: 'key-gold' }]);
+  });
+});
+
+describe('action tokens (SPEC 9, 52 Q25 — routes and critical paths in level JSON)', () => {
+  it.each([
+    right,
+    left,
+    down,
+    up,
+    { type: 'pickup' } as const,
+    { type: 'drop', itemId: 'key-gold' } as const,
+  ])('parseAction inverts describeMove for %j', (move) => {
+    expect(parseAction(describeMove(move))).toEqual(move);
+  });
+
+  it('rejects a token that is not a move, pickup, or drop', () => {
+    expect(() => parseAction('sideways')).toThrow(/unknown action token/);
   });
 });

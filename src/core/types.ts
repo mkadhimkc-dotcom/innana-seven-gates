@@ -55,6 +55,17 @@ export interface DoorDefinition {
 }
 
 /**
+ * The safe, standard, and expert routes (SPEC 9, 16), each an ordered list of
+ * action tokens in `describeMove`/`parseAction` form (src/core/state.ts):
+ * `'up' | 'down' | 'left' | 'right' | 'pickup' | 'drop:<itemId>'`.
+ */
+export interface Routes {
+  readonly safe: readonly string[];
+  readonly standard: readonly string[];
+  readonly expert: readonly string[];
+}
+
+/**
  * A level is data, not code (ADR-001). `levels/<gate>/<level>.json` parses into
  * this shape, and the matching `.md` answers the 52 critical-path questions
  * (SPEC 52).
@@ -76,6 +87,11 @@ export interface LevelDefinition {
     readonly standard: number;
     readonly expert: number;
   };
+  readonly routes: Routes;
+  /** The sequence of actions required to reach the goal (SPEC 9, 52 Q25). */
+  readonly criticalPath: readonly string[];
+  /** Base seed for this level's reproducible New Game+ variant placement (SPEC 38-39). */
+  readonly seed: number;
 }
 
 /**
