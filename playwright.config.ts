@@ -57,5 +57,14 @@ export default defineConfig({
     url: 'http://127.0.0.1:4173',
     reuseExistingServer: !process.env['CI'],
     timeout: 180_000,
+    // Bind and poll the same address. `vite preview` defaults to host
+    // `localhost`, which on a CI runner can resolve to ::1 while Playwright
+    // polls 127.0.0.1 — the server comes up on an address nobody is watching
+    // and the wait times out silently. `npm run preview` now pins 127.0.0.1.
+    //
+    // Pipe the server's output so a future failure shows the build and preview
+    // logs instead of a bare timeout.
+    stdout: 'pipe',
+    stderr: 'pipe',
   },
 });
