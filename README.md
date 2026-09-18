@@ -13,6 +13,7 @@ No undo button, no soft-lock traps. A validator proves it before you play.
 | [`docs/SPEC.md`](docs/SPEC.md) | The game design document. The source of truth. |
 | [`docs/CLAUDE.md`](docs/CLAUDE.md) | Build rules every Claude session reads first. |
 | [`docs/adr/ADR-001-architecture.md`](docs/adr/ADR-001-architecture.md) | Stack, structure, commands, CI. |
+| [`docs/deploy-cloudflare.md`](docs/deploy-cloudflare.md) | One-time Cloudflare Pages setup for automatic deploys (SPEC 51). |
 | [`BOARD.md`](BOARD.md) | The Scrumban board routines pull cards from. |
 
 ## Getting started
