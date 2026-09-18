@@ -164,29 +164,60 @@ a physical device, or supplying a credential.
 When you hit one, append **click-by-click steps** to `HUMAN.md`, then **pick a
 different card and keep going**. The lane does not idle.
 
-## 14. After a successful certify: move the rollback point
+## 14. After a successful certify: promote by pull request
 
-Once a card is certified and CI on that commit is green, **fast-forward `main`
-to `develop`** and tag the commit `green-YYYY-MM-DD`.
+Once a card is certified and the Actions run for its merge commit on `develop`
+is green, promote that commit to `main` **through a pull request**.
 
-```bash
-git fetch origin develop main
-git checkout main && git merge --ff-only origin/develop
-git tag green-$(date -u +%F) && git push origin main --tags
-```
+1. Open a PR from `develop` into `main`, titled:
 
-Fast-forward only. If it will not fast-forward, stop and report it — `main` has
-diverged and that is a fact the owner needs, not something to force past.
+   ```
+   green YYYY-MM-DD <short-sha>
+   ```
+
+   where the date is today (UTC) and `<short-sha>` is the `develop` commit whose
+   run you watched go green.
+2. Wait for the PR's own checks to finish.
+3. Merge it.
+
+**Never push to `main` directly, and never bypass a branch protection rule.**
+`main` requires changes to arrive by pull request. A lane credential may be
+*able* to force past that; being able to is not permission to. The rule is the
+owner's, and a lane that routes around it removes the one review gate standing
+between a routine's commit and the release branch.
+
+**If the merge is refused — checks red, a required review missing, a conflict,
+anything — report it and carry on.** Do not retry in a loop, do not push
+directly, do not stop the run. A missed promotion costs a rollback point that
+the next successful certify will create anyway; a stopped lane costs the rest
+of the run.
 
 This is the rollback point SPEC 51 assumes exists. Production builds from
-`develop`, so without this there is no known-good commit to revert *to*; the
-tag is what makes "revert and push" a real option rather than an archaeology
-exercise.
+`develop`, so without it there is no known-good commit to revert *to*.
+
+### Promotions are recorded by PR title, not tags
+
+**Tag pushes return HTTP 403 for the lane credential.** `git push origin <tag>`
+fails with `RPC failed; HTTP 403` even when a branch push over the same
+connection succeeds, and the repository has no tags. This is a permission on
+the credential, not a transient error and not the proxy.
+
+So the PR title *is* the record: `green YYYY-MM-DD <short-sha>` makes the merged
+PR list a readable history of which commits were known good and when.
+
+**Do not retry a tag push, and do not add a tagging step.** It will fail again,
+and a lane burning its run on a refused ref push is a lane not building the
+game. If tagging becomes necessary, that is a credential change only the owner
+can make — record it in `HUMAN.md` (step 13) and move on.
 
 ## 15. Never
 
 - Never force-push. Not to `develop`, not to `main`, not to a `claude/**`
   branch someone else may have checked out.
+- **Never push to `main` directly.** It is promoted by pull request only
+  (step 14).
+- **Never bypass a branch protection rule**, even when the credential allows
+  it. Being able to is not permission to.
 - Never edit `docs/SPEC.md`.
 - Never edit a card's acceptance criteria.
 
