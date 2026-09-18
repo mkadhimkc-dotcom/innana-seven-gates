@@ -13,9 +13,13 @@ on:
       - develop
   workflow_dispatch:
 
+# Cancel superseded runs on pull request branches only. Never on a push: LANE
+# step 10 certifies a card against the Actions run for its own merge commit on
+# develop, so every develop commit has to keep its own run. Cancelling those
+# leaves commits with no conclusion and nothing to certify against.
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   test:
