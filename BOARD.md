@@ -4,10 +4,6 @@ Exported 2026-09-18. Routines pick only from Ready. Each card line lists model, 
 
 ## Ready (limit 8)
 
-- [ ] F-02 Repo scaffold, CI, and test runners | model: sonnet | autopilot | Foundation card | phase 1 | deps: F-01 | est: 20K tokens, 0.5 Claude h, 0 h human
-  - npm test, npm run e2e, and npm run build work locally and in CI
-  - Browser tests run at a phone-sized landscape viewport
-  - Everything also passes in the Claude Code cloud environment routines use
 - [ ] F-04 Playable build on your phone after every merge | model: sonnet | autopilot | Foundation card | phase 1 | deps: F-02 | est: 15K tokens, 0.5 Claude h, 0.5 h human
   - Every merge to develop deploys automatically
   - Stays inside the free plan's 500 builds a month
@@ -464,4 +460,7 @@ Empty
 
 ## Certified
 
-Empty
+- [x] F-02 Repo scaffold, CI, and test runners | model: sonnet | autopilot | Foundation card | phase 1 | deps: F-01 | est: 20K tokens, 0.5 Claude h, 0 h human
+  - npm test, npm run e2e, and npm run build work locally and in CI
+  - Browser tests run at a phone-sized landscape viewport
+  - Everything also passes in the Claude Code cloud environment routines use
