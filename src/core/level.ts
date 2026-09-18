@@ -9,6 +9,7 @@ import Ajv2020, { type ErrorObject } from 'ajv/dist/2020.js';
 import { isGoal } from './board.js';
 import { applyMove, parseAction } from './state.js';
 import levelSchema from './level.schema.json' with { type: 'json' };
+import { checkModelCoverage } from './validator/coverage.js';
 import {
   TILE_CODES,
   comparePositions,
@@ -163,6 +164,15 @@ function verifyRoute(level: LevelDefinition, actions: readonly string[], where: 
 
 /** Parse untrusted JSON (a file, a fixture, an editor export) into a level. */
 export function parseLevel(input: unknown): LevelDefinition {
+  // Before anything else: refuse a level carrying a feature the state model
+  // does not track. Checked on the raw input, because the schema and the model
+  // can drift apart and it is the model that decides whether SPEC 18's proof
+  // is sound. See src/core/validator/coverage.ts.
+  const unmodeled = checkModelCoverage(input);
+  if (unmodeled.length > 0) {
+    fail(unmodeled.map((finding) => `${finding.where}: ${finding.message}`).join('\n  '));
+  }
+
   if (!validateSchema(input)) {
     const [firstError] = validateSchema.errors ?? [];
     fail(firstError ? describeSchemaError(firstError) : 'level: does not match the level schema');

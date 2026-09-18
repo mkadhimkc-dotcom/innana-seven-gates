@@ -1,0 +1,20 @@
+{
+  "id": "fixture-unmodeled",
+  "gate": 1,
+  "name": "Fixture: uses a mechanic the state model does not track",
+  "tiles": [
+    "#######",
+    "#.P...#",
+    "#.#####",
+    "#....G#",
+    "#######"
+  ],
+  "player": { "x": 1, "y": 1 },
+  "blocks": [],
+  "items": [],
+  "doors": [],
+  "timers": { "standard": 60, "expert": 30 },
+  "routes": { "safe": [], "standard": [], "expert": [] },
+  "criticalPath": [],
+  "seed": 1
+}

@@ -146,7 +146,17 @@ function main(): void {
 
   const results: LevelResult[] = [];
   for (const file of files) {
-    const result = validateLevel(file, options);
+    let result: LevelResult;
+    try {
+      result = validateLevel(file, options);
+    } catch (error) {
+      // A level the loader refuses cannot be proven, and an unmodeled feature
+      // is the most important reason it might be refused: the proof would
+      // otherwise pass over a mechanic it cannot see (SPEC 18).
+      console.log(`FAIL  ${relative(REPO_ROOT, file)}`);
+      console.log(`      ${error instanceof Error ? error.message : String(error)}`);
+      process.exit(1);
+    }
     if (options.levelId && result.level.id !== options.levelId) continue;
     results.push(result);
   }
