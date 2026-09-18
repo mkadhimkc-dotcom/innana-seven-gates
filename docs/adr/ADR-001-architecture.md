@@ -89,7 +89,8 @@ implementation, exercised by both the game and the validator.**
 ├── e2e/                    # Playwright gameplay smoke tests
 ├── public/                 # PWA manifest, icons, static assets
 ├── dist/                   # Build output. Generated, git-ignored.
-└── docs/                   # SPEC.md, CLAUDE.md, adr/
+├── docs/                   # SPEC.md, adr/
+└── CLAUDE.md               # Build rules every Claude session reads first
 ```
 
 Rules that follow from this layout:
