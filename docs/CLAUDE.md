@@ -227,8 +227,21 @@ a level as far as Human QA and stops there.
   column means finish something, not start something.
 - **Move the card as you go**, and put the move in the same PR as the work
   (SPEC 50). The board and the branch never disagree.
-- **Humans merge PRs and run playtests.** Routines do not merge, do not
-  certify, and do not mark a playtest passed.
+- **Humans merge PRs and run playtests.** Routines do not merge and do not mark
+  a playtest passed. Routines never certify a level card, or any card whose
+  estimate lists human hours — those go to Human QA and wait for a person
+  (SPEC 49).
+- **A `0 h human` card may only reach Certified on green CI.** Check the CI run
+  for that card's merge commit on `develop`. Move the card to Certified only if
+  that run has *completed* and is green. If it is red, or still in flight, leave
+  the card in **Ready** with a one-line note naming the failing job — for
+  example: `CI red on <sha>: Gameplay smoke test failed`. A run that has not
+  finished is not a pass, and neither is a green run on a different commit.
+
+  Certifying on an unverified claim is how a card with a broken acceptance
+  criterion gets marked done: F-02 was certified while the `Gameplay smoke test`
+  job had failed on every run since CI was added, because nobody read the run.
+  "It passes locally" is not this criterion.
 - **Every level waits for playtests.** There is no fast path.
 - **When Human QA is full, skip level cards** and pick up non-level cards
   instead — systems, tools, art. This keeps testing pace with building rather
