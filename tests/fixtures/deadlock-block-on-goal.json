@@ -1,0 +1,17 @@
+{
+  "id": "fixture-deadlock",
+  "gate": 3,
+  "name": "Fixture: block jams the only corridor",
+  "tiles": [
+    "#######",
+    "#..####",
+    "#....G#",
+    "#..####",
+    "#######"
+  ],
+  "player": { "x": 1, "y": 2 },
+  "blocks": [{ "x": 2, "y": 2 }],
+  "items": [],
+  "doors": [],
+  "timers": { "standard": 60, "expert": 30 }
+}

@@ -1,0 +1,25 @@
+{
+  "id": "gate-01-01",
+  "gate": 1,
+  "name": "The First Gate",
+  "tiles": [
+    "#########",
+    "#.......#",
+    "#.#####.#",
+    "#.#...#.#",
+    "#.#.G.#.#",
+    "#.#...#.#",
+    "#.##.##.#",
+    "#.......#",
+    "#########"
+  ],
+  "player": { "x": 1, "y": 1 },
+  "blocks": [],
+  "items": [
+    { "id": "key-lapis", "kind": "key", "color": "lapis", "at": { "x": 7, "y": 1 } }
+  ],
+  "doors": [
+    { "id": "door-lapis", "color": "lapis", "at": { "x": 4, "y": 6 } }
+  ],
+  "timers": { "standard": 60, "expert": 30 }
+}

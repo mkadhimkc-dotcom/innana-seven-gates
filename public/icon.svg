@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Inanna: Seven Gates">
+  <rect width="64" height="64" fill="#1c2b4a" />
+  <path d="M20 48V26a12 12 0 0 1 24 0v22" fill="none" stroke="#d8a634" stroke-width="4" />
+  <path d="M14 48h36" stroke="#e0c9a6" stroke-width="4" stroke-linecap="round" />
+  <circle cx="32" cy="20" r="4" fill="#e0c9a6" />
+</svg>
