@@ -1,0 +1,24 @@
+# Build output
+dist/
+dev-dist/
+.vite/
+
+# Dependencies
+node_modules/
+
+# Test and tooling output
+coverage/
+playwright-report/
+test-results/
+.validator-cache/
+
+# Editor and OS
+.DS_Store
+*.swp
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Local env
+.env
+.env.local
