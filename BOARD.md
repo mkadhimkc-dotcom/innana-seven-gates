@@ -8,10 +8,6 @@ Exported 2026-09-18. Routines pick only from Ready. Each card line lists model, 
   - npm test, npm run e2e, and npm run build work locally and in CI
   - Browser tests run at a phone-sized landscape viewport
   - Everything also passes in the Claude Code cloud environment routines use
-- [ ] F-03 Level data schema and loader | model: opus | autopilot | Foundation card | phase 1 | deps: F-01 | est: 35K tokens, 1 Claude h, 0.5 h human
-  - JSON Schema covers rooms, tiles, entities, safe, standard, and expert routes, critical path, and seed
-  - The loader rejects a malformed level with a message naming the problem
-  - Game and validator import the same model
 - [ ] F-04 Playable build on your phone after every merge | model: sonnet | autopilot | Foundation card | phase 1 | deps: F-02 | est: 15K tokens, 0.5 Claude h, 0.5 h human
   - Every merge to develop deploys automatically
   - Stays inside the free plan's 500 builds a month
@@ -35,6 +31,10 @@ Empty
   - Decision record covers engine, input, level model, and test strategy
   - CLAUDE.md encodes the deadlock rules from docs/SPEC.md, the Definition of Done, and the board workflow
   - Lands in Human QA for your review while build cards continue
+- [ ] F-03 Level data schema and loader | model: opus | autopilot | Foundation card | phase 1 | deps: F-01 | est: 35K tokens, 1 Claude h, 0.5 h human
+  - JSON Schema covers rooms, tiles, entities, safe, standard, and expert routes, critical path, and seed
+  - The loader rejects a malformed level with a message naming the problem
+  - Game and validator import the same model
 
 ## Backlog
 
