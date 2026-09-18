@@ -4,10 +4,6 @@ Exported 2026-09-18. Routines pick only from Ready. Each card line lists model, 
 
 ## Ready (limit 8)
 
-- [ ] F-04 Playable build on your phone after every merge | model: sonnet | autopilot | Foundation card | phase 1 | deps: F-02 | est: 15K tokens, 0.5 Claude h, 0.5 h human
-  - Every merge to develop deploys automatically
-  - Stays inside the free plan's 500 builds a month
-  - You connect a free Cloudflare account once
 - [ ] S-01 Game loop, tile collision, and camera | model: sonnet | autopilot | Systems card | phase 1 | deps: F-02 | est: 45K tokens, 1 Claude h, 0 h human
   - Fixed timestep: the same inputs always produce the same state
   - Collision edge cases covered by unit tests
@@ -31,6 +27,11 @@ Empty
   - JSON Schema covers rooms, tiles, entities, safe, standard, and expert routes, critical path, and seed
   - The loader rejects a malformed level with a message naming the problem
   - Game and validator import the same model
+- [ ] F-04 Playable build on your phone after every merge | model: sonnet | autopilot | Foundation card | phase 1 | deps: F-02 | est: 15K tokens, 0.5 Claude h, 0.5 h human
+  - Every merge to develop deploys automatically
+  - Stays inside the free plan's 500 builds a month
+  - You connect a free Cloudflare account once
+  - Lands in Human QA: connecting the Cloudflare account and adding the two repo secrets in docs/deploy-cloudflare.md needs you
 
 ## Backlog
 

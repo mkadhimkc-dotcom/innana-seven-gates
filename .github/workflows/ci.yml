@@ -93,3 +93,50 @@ jobs:
           name: playwright-report
           path: playwright-report
           retention-days: 7
+
+  deploy:
+    name: Deploy to Cloudflare Pages
+    needs: [test, e2e]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # F-04: the human connects a free Cloudflare account once and adds
+      # CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID as repo secrets (see
+      # docs/deploy-cloudflare.md). Until then this job no-ops instead of
+      # failing, so develop's CI stays green.
+      - name: Check Cloudflare secrets are configured
+        id: check
+        run: |
+          if [ -n "${{ secrets.CLOUDFLARE_API_TOKEN }}" ] && [ -n "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Cloudflare secrets are not set (CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID). Skipping deploy — see docs/deploy-cloudflare.md."
+          fi
+
+      - name: Install dependencies
+        if: steps.check.outputs.configured == 'true'
+        run: npm ci
+
+      # Rebuilds from the exact commit the test and e2e jobs already proved
+      # green (SPEC 51: build must pass validation before it's live).
+      - name: Build
+        if: steps.check.outputs.configured == 'true'
+        run: npm run build
+
+      - name: Publish to Cloudflare Pages
+        if: steps.check.outputs.configured == 'true'
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: inanna-seven-gates
+          directory: dist
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
