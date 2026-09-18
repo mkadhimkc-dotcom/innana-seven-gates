@@ -48,6 +48,16 @@ The short version:
 - Levels are data. Adding a level means adding `levels/<gate>/<id>.json`, its
   `<id>.md` critical-path doc, and a line in `src/level-registry.ts`. It never
   means editing `src/core/`.
+- **Build a new level from `docs/SPEC.md` and `src/core/level.schema.json` —
+  never by copying an existing level.** `levels/gate-01/gate-01-01` in
+  particular is F-01 scaffolding: it exists so the validator and the smoke test
+  had something to run against, it has never been through the Definition of
+  Done, and nobody has played it. Copying it would make its assumptions the
+  house style before a single designed level exists.
+- If a level needs a tile, entity or mechanic `src/core/` does not model, the
+  validator will refuse it by name (`src/core/validator/coverage.ts`). Model the
+  mechanic first. Never work around the guard — it is what keeps SPEC 18's proof
+  honest.
 - Every PR must pass `npm test`, `npm run validate`, `npm run bots`, and
   `npm run e2e`, and must update `BOARD.md` to reflect the card's new column
   (SPEC 50).
