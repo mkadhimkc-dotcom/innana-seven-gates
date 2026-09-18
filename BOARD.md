@@ -12,6 +12,12 @@ Exported 2026-09-18. Lanes follow docs/LANE.md and pick only from Ready. Ready i
   - Builds the state graph from location, inventory, and switch states
   - npm run validate fails if any reachable state can no longer reach the exit
   - The report names each dead state with a seed to reproduce it
+  > NOTE (not a criterion): switch states do not exist in the engine yet — there
+  > are no switches or pressure plates in src/core/. Criteria 2 and 3 are already
+  > met by the validator built under F-01. Criterion 1 cannot be, so **T-01 must
+  > not be certified** until switches are implemented or the owner re-scopes the
+  > card. A lane that picks it up applies LANE step 11: move it to Validating
+  > with "| blocked: scope" rather than certifying around the gap.
 - [ ] P-04 Install to home screen, offline play, and saves | model: sonnet | autopilot | Platform card | phase 1 | deps: F-02 | est: 20K tokens, 0.5 Claude h, 0.5 h human
   - Installs from Safari and opens full-screen in landscape
   - Plays with no connection
