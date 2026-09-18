@@ -48,8 +48,9 @@ export default defineConfig({
   },
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'], ...launchOptions } },
-    // Phone-first delivery (SPEC 2), so the smoke test runs at phone size too.
-    { name: 'phone', use: { ...devices['Pixel 5'], ...launchOptions } },
+    // Phone-first delivery, locked to landscape (SPEC 2, 30), so the smoke
+    // test runs at phone size in the orientation the game actually plays in.
+    { name: 'phone', use: { ...devices['Pixel 5 landscape'], ...launchOptions } },
   ],
   webServer: {
     command: 'npm run build && npm run preview',
