@@ -8,6 +8,7 @@ Exported 2026-09-18. Lanes follow docs/LANE.md and pick only from Ready. Ready i
   - Fixed timestep: the same inputs always produce the same state
   - Collision edge cases covered by unit tests
   - Camera follows the player across room transitions
+  > SLICE (not a criterion): claude/slice-01 delivered the fixed camera fitting one room to the viewport and tile collision through src/core. Still open: the fixed-timestep loop and room transitions.
 - [ ] T-01 Solvability validator v1 | model: opus | autopilot | Tooling card | phase 1 | deps: F-03 | est: 65K tokens, 1.5 Claude h, 0 h human
   - Builds the state graph from location, inventory, and switch states
   - npm run validate fails if any reachable state can no longer reach the exit
@@ -25,10 +26,12 @@ Exported 2026-09-18. Lanes follow docs/LANE.md and pick only from Ready. Ready i
 - [ ] P-01 Input layer for touch, controller, and keyboard | model: sonnet | autopilot | Platform card | phase 1 | deps: S-01 | est: 25K tokens, 0.5 Claude h, 0 h human
   - All gameplay reads actions, not raw input
   - Remapping is saved per device
+  > SLICE (not a criterion): claude/slice-01 delivered the Intent layer — all gameplay reads actions, never raw input. Still open: per-device remapping and its persistence.
 - [ ] A-01 Code-drawn art and palettes | model: sonnet | autopilot | Art card | phase 1 | deps: S-01 | est: 50K tokens, 1 Claude h, 1 h human
   - Player, tiles, and props packed into one texture atlas
   - Palettes swap at runtime, ready for New Game+
   - You sign off on the art direction
+  > SLICE (not a criterion): claude/slice-01 delivered code-drawn walls, floors, goal, door, key, block and player in the SPEC 17 palette. Still open: the texture atlas, runtime palette swapping, and your sign-off.
 - [ ] S-02 Player movement and feel | model: opus | autopilot | Systems card | phase 1 | deps: S-01, P-01 | est: 50K tokens, 1.5 Claude h, 2 h human
   - Coyote time, jump buffer, variable jump height, and ladder climbing
   - Every feel value lives in one tunables file
@@ -37,6 +40,7 @@ Exported 2026-09-18. Lanes follow docs/LANE.md and pick only from Ready. Ready i
   - Move and jump work at the same time
   - No page scroll, zoom, or text selection during play
   - Size, opacity, and left-handed layout options
+  > SLICE (not a criterion): claude/slice-01 delivered tap-a-tile-to-step touch play and the no-scroll/no-zoom/no-select guards. Still open: simultaneous move+jump, and the size, opacity and left-handed options.
 - [ ] P-03 Controller support | model: sonnet | autopilot | Platform card | phase 1 | deps: P-01 | est: 25K tokens, 0.5 Claude h, 0.5 h human
   - Xbox and PlayStation controllers work on your phone
   - Disconnecting mid-game pauses safely
