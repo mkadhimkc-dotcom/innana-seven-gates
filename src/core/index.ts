@@ -7,6 +7,8 @@ export * from './inventory.js';
 export * from './level.js';
 export * from './state.js';
 export * from './clock.js';
+export * from './animation.js';
+export * from './platformGrid.js';
 export * from './simulation.js';
 export * from './rooms.js';
 export * from './navigation.js';

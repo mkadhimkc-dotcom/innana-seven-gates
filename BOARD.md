@@ -15,11 +15,6 @@ Cards voided by the v2 rewrite are listed at the foot of this file under **Void 
   - The loader rejects a malformed level with a message naming the problem
   - Game and validator import the same model
   - The unknown-feature guard refuses any tile or entity the state model does not track
-- [ ] S-20 Platformer core: side view, tiles, integer scaling | model: sonnet | autopilot | Systems card | phase 1 | deps: F-02 | est: 45K tokens, 1 Claude h, 0 h human
-  - 16x16 tiles rendered at a whole-number scale, letterboxed into 16:9, no filtering
-  - One screen per level, fixed camera, no scrolling and no camera movement
-  - Two-frame animation at 8fps, driven by the fixed-timestep clock
-  - Same inputs always produce the same state
 - [ ] S-21 Jump physics: fixed arc, gravity, safe falls | model: opus | autopilot | Systems card | phase 1 | deps: S-20 | est: 50K tokens, 1.5 Claude h, 1 h human
   - One jump arc: same height, same distance, same duration, every time
   - No double jump, no wall jump, no variable height from holding the button
@@ -46,7 +41,12 @@ Cards voided by the v2 rewrite are listed at the foot of this file under **Void 
 
 ## Building (limit 2)
 
-Empty
+- [ ] S-20 Platformer core: side view, tiles, integer scaling | model: sonnet | autopilot | Systems card | phase 1 | deps: F-02 | est: 45K tokens, 1 Claude h, 0 h human
+  - 16x16 tiles rendered at a whole-number scale, letterboxed into 16:9, no filtering
+  - One screen per level, fixed camera, no scrolling and no camera movement
+  - Two-frame animation at 8fps, driven by the fixed-timestep clock
+  - Same inputs always produce the same state
+  > Work pushed; card moves to Certified once this merge commit's Actions run is confirmed green (LANE step 10).
 
 ## Validating (limit 3)
 
