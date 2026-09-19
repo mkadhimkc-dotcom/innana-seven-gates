@@ -11,12 +11,6 @@ Cards voided by the v2 rewrite are listed at the foot of this file under **Void 
   - The loader rejects a malformed level with a message naming the problem
   - Game and validator import the same model
   - The unknown-feature guard refuses any tile or entity the state model does not track
-- [ ] S-21 Jump physics: fixed arc, gravity, safe falls | model: opus | autopilot | Systems card | phase 1 | deps: S-20 | est: 50K tokens, 1.5 Claude h, 1 h human
-  - One jump arc: same height, same distance, same duration, every time
-  - No double jump, no wall jump, no variable height from holding the button
-  - Gravity applies when not grounded or climbing; falls are safe at any height
-  - The arc is a pure function in src/core that the validator can sweep tile by tile
-  - Frame-exact tests for the arc and for landing
 - [ ] S-25 Guardians: deterministic patrols | model: opus | autopilot | Systems card | phase 1 | deps: S-20 | est: 50K tokens, 1.5 Claude h, 0 h human
   - A guardian's position is a pure function of ticks elapsed; its cycle is finite
   - No randomness, no player-seeking, no reaction to player position anywhere in the behaviour
@@ -41,7 +35,13 @@ Empty
 
 ## Validating (limit 3)
 
-Empty
+- [ ] S-21 Jump physics: fixed arc, gravity, safe falls | model: opus | autopilot | Systems card | phase 1 | deps: S-20 | est: 50K tokens, 1.5 Claude h, 1 h human | blocked: decision needed
+  - One jump arc: same height, same distance, same duration, every time
+  - No double jump, no wall jump, no variable height from holding the button
+  - Gravity applies when not grounded or climbing; falls are safe at any height
+  - The arc is a pure function in src/core that the validator can sweep tile by tile
+  - Frame-exact tests for the arc and for landing
+  > The King's Valley replication spec (docs/KINGS-VALLEY-RECONCILIATION.md B1) specifies TWO arcs — 2.0 tiles forward when jumping from a run, 0 tiles when jumping in place — where SPEC 13 says one. S-21 would hard-code whichever is chosen, and T-21's clearance sweep follows it. One arc or two?
 
 ## Human QA (limit 3)
 
