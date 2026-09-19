@@ -9,14 +9,6 @@ green, keep the queue full, pick a card, prove it, merge it, and certify it.
 This file is the rules a lane works within; LANE.md is the order it does things
 in.
 
-> **⚠ Sections 1 and 2 of this file are being rewritten for SPEC v2.**
-> v2 makes this a side-view platformer (jewels, guardians, breakable blocks, a
-> limited-use axe). Section 1 below still restates v1's inventory limits, block
-> pushing, keys, doors and torches — **all void**. Read `docs/SPEC.md` v2 and
-> `docs/DECISIONS.md` D-005 instead, and do not implement a mechanic from
-> section 1 until card **F-06** has rewritten it. The deadlock-free guarantee
-> itself survives; the mechanics it is stated over do not.
-
 `docs/SPEC.md` is the source of truth. Where this file and SPEC disagree, SPEC
 wins and this file is the bug — except where `docs/DECISIONS.md` records the
 owner deciding otherwise. Section numbers below refer to SPEC.
@@ -51,17 +43,16 @@ The short version:
 - Never add a rule to a scene. If the game needs to know whether something is
   allowed, the answer lives in `src/core/` and both the game and the validator
   read it there.
-- Never add a movement, inventory, or block rule without a unit test in
-  `tests/core/` and a validator run over the affected levels.
+- Never add a movement, collection, block or guardian rule without a unit test
+  in `tests/core/` and a validator run over the affected levels.
 - Levels are data. Adding a level means adding `levels/<gate>/<id>.json`, its
   `<id>.md` critical-path doc, and a line in `src/level-registry.ts`. It never
   means editing `src/core/`.
-- **Build a new level from `docs/SPEC.md` and `src/core/level.schema.json` —
-  never by copying an existing level.** `levels/gate-01/gate-01-01` in
-  particular is F-01 scaffolding: it exists so the validator and the smoke test
-  had something to run against, it has never been through the Definition of
-  Done, and nobody has played it. Copying it would make its assumptions the
-  house style before a single designed level exists.
+- **Build a new level from `docs/SPEC.md` and the v2 schema — never by copying
+  an existing level.** Everything under `levels/` today is v1 and superseded
+  (`levels/SUPERSEDED.md`); it is a top-down room with a key, a door and a
+  pushable block, none of which exist in v2. Copying it would rebuild the game
+  that was just voided.
 - If a level needs a tile, entity or mechanic `src/core/` does not model, the
   validator will refuse it by name (`src/core/validator/coverage.ts`). Model the
   mechanic first. Never work around the guard — it is what keeps SPEC 18's proof
@@ -74,114 +65,137 @@ The short version:
 
 ---
 
-## 1. Deadlock rules (SPEC 8–19)
+## 1. The rules of the game (SPEC 8–19)
 
 These are the rules the whole project exists to keep. Read them before touching
 level data, movement, or the validator.
 
+**This is a side-view platformer** in the idiom of *King's Valley* (MSX, 1985).
+If you find yourself writing block pushing, a carried inventory, keys, doors or
+torches, you are building v1, which is void — see `docs/DECISIONS.md` D-005.
+
 ### 1.1 Deadlock definition (SPEC 8)
 
-A **deadlock** is any state from which no sequence of actions reaches the exit.
-Example: a block pushed into a corner where it can no longer be retrieved, when
-that block is needed to proceed.
+A **deadlock** is any state from which no sequence of actions collects the
+remaining jewels and reaches the gate. Example: you broke the block you needed
+to stand on to reach the last jewel, and nothing else reaches it.
 
 **Deadlocks are forbidden by design.** Every level passes a validator that
-proves: from *every reachable state*, a path to the exit exists. "The intended
-route works" is not the bar. "No reachable state is dead" is the bar.
+proves: from *every reachable non-death state*, a path exists that collects
+every remaining jewel and reaches the gate. "The intended route works" is not
+the bar. "No reachable state is dead" is the bar.
+
+Death is **not** a deadlock. Death restarts the level (1.4), and the start state
+is completable by construction.
 
 ### 1.2 Level structure (SPEC 9)
 
-Each level is a single room containing:
+One screen, no scrolling:
 
-- **Tiles:** floor, wall, water, lava, spike, goal.
-- **Entities:** player, NPC statues, pushable blocks, items.
-- **Three routes:** safe (no timer), standard (60s), expert (30s).
-- **A critical path:** the sequence of actions required to reach the goal.
-- **Treasure:** optional, unlocks New Game+ cosmetics, and is **never required**
-  to finish a level.
+- **Tiles:** empty, solid brick, breakable block, ladder, gate, spikes.
+- **Entities:** player, jewels, guardians, axe pickups.
+- **Every jewel is required.** There is no optional treasure.
 
-### 1.3 Checkpoints and safe saves (SPEC 10)
+**Level budget**, enforced by the validator: 8 jewels, 10 breakable blocks,
+4 guardians, 4 axe uses, 32×24 grid. Over budget is a validation failure, for
+the same reason a truncated search is — the proof has to finish.
 
-A checkpoint saves position and inventory **only when both hold**:
+### 1.3 The goal (SPEC 7)
 
-1. The exit is still reachable from that state — the validator confirms it.
-2. The player is not trapped.
+Collect every jewel and the gate opens. Enter the gate to finish the level. The
+puzzle is the *order and route*, not dexterity.
 
-If the player does become trapped, they return to the last safe checkpoint
-automatically. Implemented in `src/platform/checkpoint.ts`; an inconclusive
-search counts as unsafe, costing the player a checkpoint rather than risking a
-soft-lock.
+### 1.4 Death and restart (SPEC 10, D-006)
 
-### 1.4 Room transitions (SPEC 11)
+Guardian or spike contact kills. **Death restarts the level from its start
+state** — jewels, broken blocks, axe uses and killed guardians all revert, and
+the guardian cycle restarts at phase zero.
 
-Moving between rooms (exit → next level entrance) preserves inventory. An item
-picked up in a previous session stays gone from the room it came from.
+**There are no in-level checkpoints, and assists may never add one.** A
+checkpoint that restored progress but reset the guardian phase would create a
+state the validator never explored, which can be dead while the level certifies
+clean. Nothing carries between levels either (SPEC 11), which is what lets each
+level be proven in isolation.
 
-### 1.5 Inventory limits (SPEC 12)
+### 1.5 Movement (SPEC 13)
 
-The player carries up to **3 items**. Picking up a 4th drops the **oldest** at
-the player's feet. Implemented in `src/core/inventory.ts`.
+Run left and right at constant speed, no acceleration. **One jump arc** — same
+height, distance and duration every time. No double jump, no wall jump, no
+variable height from holding the button. Gravity applies when not grounded or
+climbing. **Falls are safe at any height**; only guardians and spikes kill.
 
-### 1.6 Block mechanics (SPEC 13)
+The fixed arc is the point: it makes every jump either possible or impossible,
+never a matter of execution skill, and it is what lets 1.11 prove clearance
+geometrically.
 
-- Blocks are 1×1 tiles.
-- The player pushes them by moving into them. **Blocks cannot be pulled.**
-- Blocks stop at walls.
-- Blocks pushed into water or lava sink and disappear. **This is one-way** and
-  is the most common source of deadlocks.
-- Blocks cannot be pushed into spikes; they stop before the spike.
+### 1.6 Ladders (SPEC 14)
 
-Implemented in `src/core/blocks.ts`.
+Climb while overlapping a ladder tile; step off either side onto solid ground.
+Jumping from a ladder uses the same fixed arc.
 
-### 1.7 Keys and doors (SPEC 14)
+### 1.7 Breakable blocks and the axe (SPEC 15)
 
-Keys open doors of matching colour. Picking up a key does not consume it — the
-player carries it. **Doors stay open after unlocking.** Keys can be dropped and
-picked up again.
+Some blocks are breakable. Breaking one is **permanent for the attempt**.
+Breaking needs an axe found in the level with **limited uses**; one use breaks
+one block **or** kills one guardian. Uses are never refunded.
 
-### 1.8 Torches and lighting (SPEC 15)
+**This is the main source of dead states.** Spending the last use on the wrong
+block, or breaking the platform you needed, is exactly what 1.10 exists to prove
+away before a level ships.
 
-A tile holding a torch is lit, and tiles within 3 cells of a lit tile are lit.
-Dark tiles halve movement speed. Torches can be dropped and picked up.
+### 1.8 Guardians (SPEC 16)
 
-### 1.9 Time pressure (SPEC 16)
+Guardians patrol **fixed, cyclic routes**. Contact kills.
 
-Safe route: no timer. Standard: 60 seconds. Expert: 30 seconds. The timer is
-shown on screen. **Running out restarts from the last checkpoint** — which,
-by 1.3, is always a state the exit is reachable from.
+**Determinism is mandatory.** A guardian's position is a pure function of
+`(guardian, phase)`. No randomness, no player-seeking, no reaction to player
+position, ever. A guardian that reacts to the player makes the state space
+unprovable — that is not a design trade-off, it is a spec violation, and it is
+why card S-08 was voided rather than rewritten.
 
-### 1.10 Visual theme (SPEC 17)
+**Every guardian cycle must divide the level's declared period, ≤ 256 frames.**
+Otherwise the combined phase is the LCM of the cycles and the graph explodes.
 
-Mesopotamian: clay brick walls, sandy floors, cuneiform patterns. Palette of
-terracotta, gold, deep blue, lapis lazuli. Hazards red, water cyan, lava orange.
-The player is a semi-transparent silhouette. Defined in `src/ui/palette.ts`.
+One axe use kills a guardian; it stays dead for that attempt.
 
-### 1.11 Validator: solvability proof (SPEC 18)
+### 1.9 Visual rules (SPEC 12, 17, 30, 46)
 
-For each level the validator builds a state graph:
+16×16 tiles, **integer scaling only**, letterboxed into 16:9. Fixed camera, one
+screen, no scrolling and no camera movement. **Two-frame animation at 8fps,
+never three.** Mesopotamian palette. Guardians distinct in **silhouette**, not
+only colour (SPEC 32).
 
-- **Nodes:** reachable (player position, inventory, block positions, ground
-  items, opened doors).
-- **Edges:** legal moves from each node.
-- **Proof:** from every reachable node there exists a path to the exit node.
-- **On failure:** the report names the dead state and a seed to reproduce it.
+### 1.10 Validator: solvability proof (SPEC 18)
 
-Implemented in `src/core/validator/graph.ts` and `reachability.ts`, run by
-`npm run validate`.
+The state is exactly **nine** components (D-007):
 
-### 1.12 Validator: block deadlock detection (SPEC 19)
+1. player cell · 2. facing · 3. vertical state (`grounded`, `climbing`,
+`jumping(frame, dx)`, `falling(frame, dx)`) · 4. jewels collected ·
+5. blocks broken · 6. **guardians killed** · 7. **axe pickups collected** ·
+8. axe uses remaining · 9. guardian phase
 
-For levels with blocks (Gates III+), the block deadlock detector also runs:
+**Guardian position is derived, never stored.** Storing it would let two
+identical states differ and would admit a guardian driven by something other
+than the clock — S-08's failure one layer down.
 
-- Detect **irreversible block pushes** — a block cornered where it cannot be
-  retrieved, or sunk in water or lava.
-- Confirm the puzzle is **still solvable even if that block is lost**.
-- If not, flag it as a deadlock and **fail validation**.
-- Must complete in **under 1 minute per level**.
+The four easiest to omit and fatal to omit are 6, 2, the direction inside 3, and
+7. `docs/DECISIONS.md` D-007 says why for each.
 
-Implemented in `src/core/validator/deadlock.ts`.
+The proof also covers: no jewel unreachable, no axe required but absent, no
+breakable block destroyable into an unwinnable state.
 
-### 1.13 How to obey these rules in practice
+### 1.11 Validator: clearance and timing (SPEC 19)
+
+**Jump clearance.** Sweep the fixed arc tile by tile for every jump a required
+route uses. An arc that clips solid geometry fails the level.
+
+**Timing margin.** Every required guardian passage must pass with a margin above
+the gate's floor (SPEC 25). **A safe route needing frame-perfect input is a
+validator failure, not a matter of taste.**
+
+Both must complete in **under 1 minute per level**.
+
+### 1.12 How to obey these rules in practice
 
 - **Run `npm run validate` before every commit that touches a level or a rule.**
   Not before the PR — before the commit.
@@ -189,12 +203,12 @@ Implemented in `src/core/validator/deadlock.ts`.
   check. Change the level, or change the rule and re-prove every level.
 - Never weaken a budget to make a level pass. A validator that truncates its
   search reports failure, not success, because an unfinished search proves
-  nothing. If a level cannot be proven inside the SPEC 19 budget, the level is
-  too complex — simplify it, or open a card for a better search strategy.
-- When you add a mechanic, ask first: **can it be made irreversible?** If yes,
-  it needs a deadlock check before it ships. One-way transitions are where
-  deadlocks come from.
-- Treasure must never be on the critical path (SPEC 9).
+  nothing.
+- When you add a mechanic, ask first: **is it irreversible, and is it
+  deterministic?** Irreversible needs a dead-state proof. Non-deterministic
+  cannot be proven at all and does not belong in this game.
+- The validator must use a **packed integer state key**, not a string one. The
+  naive state product exceeds 10^14 and only the reachable set saves you.
 
 ---
 
@@ -205,9 +219,8 @@ A level is not done until **all six** hold. Not five. There is no partial pass.
 1. **Critical-path doc answers all 52 questions** in SPEC 52.
    Lives beside the level: `levels/<gate>/<id>.md`.
 2. **Validator finds no dead states; bots find no softlocks.**
-   `npm run validate` and `npm run bots` both clean.
-3. **Safe, standard, and expert routes present**; optional treasure never
-   required.
+3. **Every jewel reachable, gate reachable, jump clearance and timing margin
+   proven** (SPEC 19).
 4. **Difficulty within the gate's target range** (SPEC 25), inspector confirms.
 5. **First-time, experienced, and adversarial playtests pass** (SPEC 48).
 6. **Level is Certified in the build board** before it can ship.
@@ -216,16 +229,15 @@ A level is not done until **all six** hold. Not five. There is no partial pass.
 
 | Playtest | Passes when |
 | --- | --- |
-| **First-time** (new player, no hints) | Reaches the goal on the safe route within the time limit, is not confused by the controls, and finishes in 1–10 minutes |
-| **Experienced** (knows the game) | Beats the standard route within 60 seconds, finds the critical path intuitively, hits no frustration or exploits |
-| **Adversarial** (bots hunting softlocks) | Bots cannot trap the player, all recoverable traps are detected and blocked, validator confirms no dead states |
+| **First-time** (new player, no hints) | Completes the level, no confusion about controls; **in Gate I, without repeated deaths** |
+| **Experienced** (knows the game) | Finds the jewel route intuitively, no frustration, no exploits, no passage that feels frame-perfect |
+| **Adversarial** (bots hunting dead states) | Bots cannot reach a state the level cannot be finished from; validator confirms no dead states; no jump clips geometry |
 
 ### Certified (SPEC 49)
 
-A level is Certified when all three playtests pass, the validator reports zero
-dead states, the block deadlock detector passes where applicable, the
-critical-path doc is complete and accurate, and difficulty is within the gate's
-target range.
+All three playtests pass, validator reports zero dead states, clearance and
+timing margin pass, the critical-path doc is complete and accurate, and
+difficulty is within the gate's target range.
 
 **A lane certifies levels too**, under LANE step 10 — see the Certification
 rule below. Item 5's three playtests no longer gate certification; the level is
