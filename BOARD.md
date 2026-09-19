@@ -41,12 +41,7 @@ Cards voided by the v2 rewrite are listed at the foot of this file under **Void 
 
 ## Building (limit 2)
 
-- [ ] S-20 Platformer core: side view, tiles, integer scaling | model: sonnet | autopilot | Systems card | phase 1 | deps: F-02 | est: 45K tokens, 1 Claude h, 0 h human
-  - 16x16 tiles rendered at a whole-number scale, letterboxed into 16:9, no filtering
-  - One screen per level, fixed camera, no scrolling and no camera movement
-  - Two-frame animation at 8fps, driven by the fixed-timestep clock
-  - Same inputs always produce the same state
-  > Work pushed; card moves to Certified once this merge commit's Actions run is confirmed green (LANE step 10).
+Empty
 
 ## Validating (limit 3)
 
@@ -371,6 +366,12 @@ Empty
   - Free plan, git-connected build (see docs/deploy-cloudflare.md for the build-count caveat)
   - You connected a free Cloudflare account
   > v2: survives unchanged.
+- [x] S-20 Platformer core: side view, tiles, integer scaling | model: sonnet | autopilot | Systems card | phase 1 | deps: F-02 | est: 45K tokens, 1 Claude h, 0 h human
+  - 16x16 tiles rendered at a whole-number scale, letterboxed into 16:9, no filtering
+  - One screen per level, fixed camera, no scrolling and no camera movement
+  - Two-frame animation at 8fps, driven by the fixed-timestep clock
+  - Same inputs always produce the same state
+  > Merged as f133b87; Actions run 35438875350 green (test + e2e jobs both passed, 12/12 e2e). Not wired into the menu flow yet — F-05's schema and S-21's movement haven't landed, so main.ts only exposes the scene as a test hook (mountPlatformGame on window). S-21, S-25 and S-23 build on this next.
 
 ---
 
