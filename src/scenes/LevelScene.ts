@@ -9,15 +9,21 @@
 
 import Phaser from 'phaser';
 import {
-  applyMove,
+  advanceSimulation,
+  createJourney,
+  createSimulation,
+  enterRoom,
   groundItemAt,
-  initialState,
-  isGoal,
+  leaveRoom,
   parseLevel,
+  queueMove,
   type GameState,
+  type Journey,
   type LevelDefinition,
   type Move,
+  type Simulation,
 } from '../core/index.js';
+import { getLevel, nextLevelId } from '../level-registry.js';
 import { isSafeCheckpoint } from '../platform/checkpoint.js';
 import { createKeyboardInput } from '../input/keyboard.js';
 import { createBoardTapInput, type BoardTapInput } from '../input/touch.js';
@@ -37,13 +43,17 @@ import { SceneKey } from './keys.js';
 export interface LevelSceneData {
   /** Raw level JSON; parsed and checked on the way in. */
   readonly level: unknown;
+  /** What the player carries in from the previous room (SPEC 11). */
+  readonly journey?: Journey;
 }
 
 export class LevelScene extends Phaser.Scene {
   private level!: LevelDefinition;
-  private state!: GameState;
+  private simulation!: Simulation;
+  private journey!: Journey;
   private checkpoint!: GameState;
   private layout!: BoardLayout;
+  private transitioning = false;
 
   private board!: Phaser.GameObjects.Graphics;
   private hudText!: Phaser.GameObjects.Text;
@@ -63,13 +73,21 @@ export class LevelScene extends Phaser.Scene {
   init(data: LevelSceneData): void {
     this.levelSource = data.level;
     this.level = parseLevel(data.level);
-    this.state = initialState(this.level);
-    this.checkpoint = this.state;
+    this.journey = data.journey ?? createJourney();
+    this.simulation = createSimulation(this.level, { state: enterRoom(this.level, this.journey) });
+    this.checkpoint = this.simulation.state;
     this.won = false;
+    this.transitioning = false;
+  }
+
+  /** Current world state. Everything reads through here, nothing mutates it. */
+  private get state(): GameState {
+    return this.simulation.state;
   }
 
   create(): void {
     this.cameras.main.setBackgroundColor(PALETTE.deepBlue);
+    this.cameras.main.fadeIn(180, 0, 0, 0);
     this.layout = computeLayout(this.level, { width: this.scale.width, height: this.scale.height });
     this.board = this.add.graphics();
 
@@ -128,18 +146,18 @@ export class LevelScene extends Phaser.Scene {
 
     switch (intent.type) {
       case 'move':
-        this.tryMove({ type: 'move', direction: intent.direction });
+        this.enqueue({ type: 'move', direction: intent.direction });
         return;
       case 'act':
-        this.tryMove({ type: 'pickup' });
+        this.enqueue({ type: 'pickup' });
         return;
       case 'drop': {
         const oldest = this.state.carrying[0];
-        if (oldest !== undefined) this.tryMove({ type: 'drop', itemId: oldest });
+        if (oldest !== undefined) this.enqueue({ type: 'drop', itemId: oldest });
         return;
       }
       case 'restartFromCheckpoint':
-        this.state = this.checkpoint;
+        this.simulation = createSimulation(this.level, { state: this.checkpoint });
         this.redraw();
         return;
       case 'toggleInventory':
@@ -149,18 +167,34 @@ export class LevelScene extends Phaser.Scene {
     }
   }
 
-  private tryMove(move: Move): void {
-    const next = applyMove(this.level, this.state, move);
-    if (next === null) {
-      this.nudge();
-      return;
+  /**
+   * Queue a move for the next fixed step. Nothing is applied here — the loop
+   * owns that, so input timing cannot change the outcome.
+   */
+  private enqueue(move: Move): void {
+    if (this.won || this.transitioning) return;
+    this.simulation = queueMove(this.simulation, move);
+  }
+
+  /**
+   * The game loop. Phaser hands us real elapsed time; the simulation converts
+   * it into whole fixed steps and applies at most one queued move per step.
+   * Same inputs, same state, whatever the frame rate does.
+   */
+  override update(_time: number, delta: number): void {
+    if (this.won || this.transitioning) return;
+
+    const outcome = advanceSimulation(this.simulation, delta);
+    this.simulation = outcome.simulation;
+
+    if (outcome.rejected.length > 0) this.nudge();
+
+    if (outcome.applied.length > 0 || outcome.rejected.length > 0) {
+      this.maybeCheckpoint();
+      this.redraw();
     }
 
-    this.state = next;
-    this.maybeCheckpoint();
-    this.redraw();
-
-    if (isGoal(this.level, this.state)) this.win();
+    if (outcome.reachedGoal) this.leaveThisRoom();
   }
 
   /** A refused move should feel refused, not ignored. */
@@ -171,6 +205,29 @@ export class LevelScene extends Phaser.Scene {
   /** SPEC 10: only save when the exit is still reachable from here. */
   private maybeCheckpoint(): void {
     if (isSafeCheckpoint(this.level, this.state).safe) this.checkpoint = this.state;
+  }
+
+  /**
+   * The goal is reached. Fold this room into the journey, then either walk on
+   * to the next room or end the run (SPEC 11).
+   */
+  private leaveThisRoom(): void {
+    this.journey = leaveRoom(this.level, this.state, this.journey);
+
+    const next = nextLevelId(this.level.id);
+    if (next === null) {
+      this.win();
+      return;
+    }
+
+    // Fade out, swap rooms, fade in. The camera re-fits to the new room in
+    // create(), because each room is a fixed camera of its own (SPEC 30).
+    this.transitioning = true;
+    this.publishStatus();
+    this.cameras.main.fadeOut(220, 0, 0, 0);
+    this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
+      this.scene.restart({ level: getLevel(next), journey: this.journey });
+    });
   }
 
   private win(): void {
@@ -236,7 +293,8 @@ export class LevelScene extends Phaser.Scene {
     if (!host) return;
     host.dataset['player'] = `${this.state.player.x},${this.state.player.y}`;
     host.dataset['carrying'] = this.state.carrying.join(',');
-    host.dataset['status'] = this.won ? 'won' : 'playing';
+    host.dataset['status'] = this.won ? 'won' : this.transitioning ? 'leaving' : 'playing';
+    host.dataset['room'] = this.level.id;
   }
 
   private updateHud(): void {
