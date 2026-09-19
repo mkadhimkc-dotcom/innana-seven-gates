@@ -31,10 +31,23 @@
         width: 100%;
         height: 100%;
       }
+      /*
+       * Mounted on demand by e2e/platform.spec.ts (S-20); empty otherwise.
+       * pointer-events: none so this empty, full-viewport layer never steals
+       * clicks meant for #game underneath it.
+       */
+      #platform-game {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+      }
     </style>
   </head>
   <body>
     <div id="game" data-testid="game-root"></div>
+    <div id="platform-game" data-testid="platform-game-root"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
