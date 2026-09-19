@@ -1,0 +1,32 @@
+{
+  "id": "fixture-collision",
+  "gate": 1,
+  "name": "Fixture: every collision case in one room",
+  "tiles": [
+    "############",
+    "#..........#",
+    "#..........#",
+    "#.~.L.^.#..#",
+    "#..........#",
+    "#..........#",
+    "#.........G#",
+    "############"
+  ],
+  "player": { "x": 1, "y": 1 },
+  "blocks": [
+    { "x": 2, "y": 2 },
+    { "x": 4, "y": 2 },
+    { "x": 6, "y": 2 },
+    { "x": 8, "y": 2 },
+    { "x": 3, "y": 4 },
+    { "x": 4, "y": 4 },
+    { "x": 6, "y": 4 },
+    { "x": 8, "y": 4 }
+  ],
+  "items": [{ "id": "key-gold", "kind": "key", "color": "gold", "at": { "x": 7, "y": 4 } }],
+  "doors": [{ "id": "door-gold", "color": "gold", "at": { "x": 9, "y": 4 } }],
+  "timers": { "standard": 60, "expert": 30 },
+  "routes": { "safe": [], "standard": [], "expert": [] },
+  "criticalPath": [],
+  "seed": 99
+}

@@ -8,7 +8,7 @@ Exported 2026-09-18. Lanes follow docs/LANE.md and pick only from Ready. Ready i
   - Fixed timestep: the same inputs always produce the same state
   - Collision edge cases covered by unit tests
   - Camera follows the player across room transitions
-  > SLICE (not a criterion): claude/slice-01 delivered the fixed camera fitting one room to the viewport and tile collision through src/core. Still open: the fixed-timestep loop and room transitions.
+  > SLICE (not a criterion): claude/S-01 delivered criteria 1 and 2 in full — the fixed-timestep loop (src/core/clock.ts, simulation.ts, proven identical across steady, stuttering and oversized frames) and collision edge cases (tests/core/collision.test.ts). Criterion 3's engine half is built and unit-tested across two rooms (src/core/rooms.ts), but the shipped game has one level, so nextLevelId is always null and no transition can actually occur in play. Not certified: the criterion is not observable until a second level ships (L-00/L-11).
 - [ ] P-04 Install to home screen, offline play, and saves | model: sonnet | autopilot | Platform card | phase 1 | deps: F-02 | est: 20K tokens, 0.5 Claude h, 0.5 h human
   - Installs from Safari and opens full-screen in landscape
   - Plays with no connection
