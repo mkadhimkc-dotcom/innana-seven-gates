@@ -149,3 +149,160 @@ Certification rule in `CLAUDE.md`, restoring "a lane takes a level as far as
 Human QA and stops". Levels already certified under this decision should be
 moved back to Human QA, since none of them will have had the two human
 playtests. `docs/PLAYTEST-QUEUE.md` lists exactly which ones those are.
+
+---
+
+## D-005 — v1's top-down model is void; the game is a side-view platformer
+
+**Decided:** 2026-09-19 · **Raised by:** the owner · **Implemented in:**
+`docs/SPEC.md` v2, `BOARD.md`
+
+The game is a **side-view platformer** in the idiom of Konami's *King's Valley*
+(MSX, 1985): one screen per level, run and jump and climb, collect every jewel
+to open the gate, guardians on fixed patrols that kill on contact, breakable
+blocks and a limited-use axe. It is not, and never was, a top-down grid puzzle.
+
+**Reasoning.** v1 described top-down movement, block pushing, a carried
+inventory and key-and-door locks. That is a different game. Every level, every
+mechanic card and the whole validator model were being built against it, so the
+error compounded with each card certified. Voiding it now costs one engine;
+voiding it after Gate I ships costs the levels too.
+
+### Discarded
+
+| v1 concept | Why it goes |
+| --- | --- |
+| Top-down grid movement | Replaced by side view with gravity (§12–13) |
+| Block **pushing** (v1 §13) | No pushing in v2. Blocks are **broken**, with an axe, permanently |
+| Carried inventory, 3-item cap, drop-oldest (v1 §12) | No inventory. Jewels are collected, not carried; the axe is a use counter |
+| Keys and doors (v1 §14) | No locks. The gate opens when the last jewel is taken (§7) |
+| Torches and lighting (v1 §15) | Gone. Darkness is aesthetic, not mechanical |
+| Safe / standard / expert routes and timers (v1 §9, §16) | One route standard per level. Death, not the clock, is the pressure |
+| Optional treasure (v1 §9) | Every jewel is required; that is what makes "collect them all" complete |
+| Room transitions carrying inventory (v1 §11) | Nothing carries between levels (§11). Each level proves in isolation |
+| Isometric 3/4 camera with smooth pan (v1 §30) | Fixed camera, one screen, integer scaling, no movement (§12, §30) |
+
+### Kept
+
+- **The deadlock-free guarantee and its language** (v1 §8 → v2 §8), restated
+  against the v2 goal: from every reachable non-death state the player can still
+  collect the remaining jewels and reach the gate. "No reachable state is dead"
+  is still the bar.
+- **The validator as a merge gate** — `npm run validate` is still not advisory,
+  a truncated search is still a failure, and a level that cannot be proven does
+  not ship.
+- Seven gates, ~37 levels, the Inanna descent narrative and the regalia
+  progression (§6, §21).
+- Mesopotamian palette and theme (§17), now at 16×16.
+- Platform and delivery in full: TypeScript, Phaser 3, PWA, Cloudflare Pages,
+  touch / controller / keyboard (§2).
+- Definition of Done, playtest rubric, certification bar, PR quality bar, build
+  and deployment, the critical-path doc discipline and the board workflow
+  (§20, §48–53).
+- The architecture in ADR-001: engine-free `src/core/`, the `src/` layout, the
+  four commands, CI. None of it was top-down-specific.
+
+### New in v2 that has no v1 ancestor
+
+Fixed jump arc with no variable height (§13) · ladders (§14) · breakable blocks
+and limited axe uses (§15) · deterministic guardians (§16) · jump-clearance
+proof (§19) · timing-margin floor per gate (§19, §25) · Gate I's
+no-repeated-deaths rule (§25).
+
+**Section numbers 20 and 24–53 keep their v1 meanings**, so references to
+SPEC 20, 25, 31, 48, 49, 50, 51, 52 and 53 elsewhere in the repo remain correct.
+Sections 7–19 are the rewrite, and anything citing SPEC 12–16 for inventory,
+blocks, keys or torches is citing a void rule.
+
+**How to reverse.** Restore `docs/SPEC.md` from `2072028` and revert the board.
+Reversing is only sensible before any v2 level ships; after that the levels
+encode v2 geometry and would have to be rebuilt too.
+
+**Consequence for `CLAUDE.md`.** Its §1 "Deadlock rules" restates v1 §12–§16 —
+inventory limits, block pushing, keys and doors, torches. Those subsections are
+now void. The file still correctly says SPEC wins where they disagree, but it
+should be rewritten against v2 before lanes resume; until then a lane reading it
+will implement mechanics this game does not have.
+
+---
+
+## D-006 — Death restarts the level; no in-level checkpoints
+
+**Decided:** 2026-09-19 · **Raised by:** the owner, scoping validator v2 ·
+**Implemented in:** `docs/SPEC.md` §10, §33, §35, §52
+
+Guardian or spike contact restarts the level from its start state. Jewels,
+broken blocks, axe uses and killed guardians all revert, and the guardian cycle
+restarts at phase zero.
+
+**Reasoning.** The owner put the trade correctly: a checkpoint needs its own
+reachability proof, a restart does not. Working it through, the checkpoint is
+worse than that.
+
+§18 already proves every reachable non-death state completable, so a checkpoint
+at a *reachable* state needs no separate proof — that much is a corollary. The
+hole is the guardian phase. Restore the player's progress but reset the cycle to
+zero and the resulting state — these jewels, these blocks broken, phase zero —
+is one the validator never explored, because it is not reachable from the level
+start. It can be dead while the level certifies clean. Saving the phase into the
+checkpoint closes the hole, at the cost of guardians visibly teleporting on
+respawn and a phase field in the save format.
+
+Restart-from-start has none of it: the start state is completable by
+construction, the state space stays at its minimum, and §19's one-minute budget
+keeps the headroom it needs. It is also the *King's Valley* idiom — a level is
+one screen, and a successful run is well under a minute even at Gate VII. The
+§25 targets measure first-time completion including deaths, not one flawless
+run.
+
+**What it costs.** Late deaths in a long Gate VII level are expensive, and there
+is no way to soften that for a struggling player without reintroducing the hole
+— which is why §35 now says assists may never add a checkpoint.
+
+**How to reverse.** Add the guardian phase to the checkpoint record, restore it
+on respawn, and keep the §18 proof unchanged. Do *not* reverse by resetting the
+phase on respawn; that is the unsound version.
+
+---
+
+## D-007 — The nine-component state, and the guardian period that keeps it finite
+
+**Decided:** 2026-09-19 · **Raised by:** the owner, confirming the T-20/21/22
+state model · **Implemented in:** `docs/SPEC.md` §9, §16, §18
+
+The proposed state — cell, vertical phase, jewels, blocks broken, axe uses,
+guardian-position-as-function-of-frames — was close but short in five places.
+§18 now fixes the state at nine components. The additions:
+
+1. **Guardians killed.** Not derivable from axe uses spent, because a use may
+   have broken a block instead. Omitted, the graph proves a harder game than the
+   one being played.
+2. **Facing.** The axe acts on the faced tile, so without facing the "use axe"
+   edge is ambiguous.
+3. **Airborne sub-state carries direction, and distinguishes jumping from
+   falling.** A fall entered by walking off a ledge is not a jump with its rise
+   removed.
+4. **Axe pickups collected, separate from uses remaining.** Zero uses because it
+   was never picked up is a different state from zero uses because they were
+   spent.
+5. **A declared level period, ≤ 256 frames, that every guardian cycle divides.**
+   Without it the combined phase is the LCM of the individual cycles: cycles of
+   7, 11 and 13 give 1001, and four coprime cycles give tens of thousands. With
+   it, phase is one small integer.
+
+**Guardian position is derived, never stored.** Storing it would let two
+identical states differ, and would quietly admit a guardian whose motion depends
+on something other than the clock — which is exactly what S-08's "chaser" was.
+That is the same failure mode, one layer down: S-08 put non-determinism in the
+behaviour, and a stored position puts it in the state.
+
+**§9 gains a level budget** — 8 jewels, 10 breakable blocks, 4 guardians, 4 axe
+uses, 32×24 grid — enforced by the validator. The naive state product exceeds
+10^14; only the reachable set is explored and it is far smaller, but the budget
+is what keeps that gap survivable inside §19's one minute. The validator must
+use a packed integer key, not the string key v1 used.
+
+**How to reverse.** Any component can be dropped only by proving the game cannot
+distinguish the states it separates. Raising a §9 cap is a validator performance
+question, measurable: raise it, run the sweep, and see whether validation still
+finishes inside a minute.

@@ -1,46 +1,43 @@
 # Inanna: Seven Gates board
 
-Exported 2026-09-18. Lanes follow docs/LANE.md and pick only from Ready. Ready is refilled to 8 cards whenever **Ready** holds fewer than 3 — not when Backlog does. Cards move into Ready in dependency order, and a dependency counts as met once its work is **merged**, that is, once the card it depends on sits in Human QA or Certified. Each card line lists model, autopilot or needs-you, phase, dependencies, and estimate. Acceptance criteria follow each card.
+Rebuilt 2026-09-19 for **SPEC v2** (side-view platformer). Lanes follow docs/LANE.md and pick only from Ready. Ready is refilled to 8 cards whenever **Ready** holds fewer than 3 — not when Backlog does. Cards move into Ready in dependency order, and a dependency counts as met once its work is **merged**, that is, once the card it depends on sits in Human QA or Certified. Each card line lists model, autopilot or needs-you, phase, dependencies, and estimate. Acceptance criteria follow each card.
+
+Cards voided by the v2 rewrite are listed at the foot of this file under **Void (v1)** — they are not deleted, so nothing disappears without a record. See docs/DECISIONS.md D-005.
 
 ## Ready (limit 8)
 
-- [ ] S-01 Game loop, tile collision, and camera | model: sonnet | autopilot | Systems card | phase 1 | deps: F-02 | est: 45K tokens, 1 Claude h, 0 h human
-  - Fixed timestep: the same inputs always produce the same state
-  - Collision edge cases covered by unit tests
-  - Camera follows the player across room transitions
-- [ ] T-01 Solvability validator v1 | model: opus | autopilot | Tooling card | phase 1 | deps: F-03 | est: 65K tokens, 1.5 Claude h, 0 h human
-  - Builds the state graph from location, inventory, and switch states
-  - npm run validate fails if any reachable state can no longer reach the exit
-  - The report names each dead state with a seed to reproduce it
-  > NOTE (not a criterion): switch states do not exist in the engine yet — there
-  > are no switches or pressure plates in src/core/. Criteria 2 and 3 are already
-  > met by the validator built under F-01. Criterion 1 cannot be, so **T-01 must
-  > not be certified** until switches are implemented or the owner re-scopes the
-  > card. A lane that picks it up applies LANE step 11: move it to Validating
-  > with "| blocked: scope" rather than certifying around the gap.
+- [ ] F-06 Rewrite CLAUDE.md against SPEC v2 | model: opus | autopilot | Foundation card | phase 1 | deps: none | est: 30K tokens, 1 Claude h, 0.5 h human
+  - Section 1 restates the v2 deadlock rules (SPEC 8-19), not v1 inventory, pushing, keys or torches
+  - Definition of Done and the board workflow match SPEC 20 and 53 as written in v2
+  - No surviving reference to a void v1 mechanic anywhere in the file
+- [ ] F-05 v2 level schema and loader | model: opus | autopilot | Foundation card | phase 1 | deps: F-02 | est: 45K tokens, 1.5 Claude h, 0 h human
+  - JSON Schema covers the 16x16 grid, solid and breakable tiles, ladders, spikes, the gate, jewels, guardians with their routes, and axe pickups with uses
+  - The loader rejects a malformed level with a message naming the problem
+  - Game and validator import the same model
+  - The unknown-feature guard refuses any tile or entity the state model does not track
+- [ ] S-21 Jump physics: fixed arc, gravity, safe falls | model: opus | autopilot | Systems card | phase 1 | deps: S-20 | est: 50K tokens, 1.5 Claude h, 1 h human
+  - One jump arc: same height, same distance, same duration, every time
+  - No double jump, no wall jump, no variable height from holding the button
+  - Gravity applies when not grounded or climbing; falls are safe at any height
+  - The arc is a pure function in src/core that the validator can sweep tile by tile
+  - Frame-exact tests for the arc and for landing
+- [ ] S-25 Guardians: deterministic patrols | model: opus | autopilot | Systems card | phase 1 | deps: S-20 | est: 50K tokens, 1.5 Claude h, 0 h human
+  - A guardian's position is a pure function of ticks elapsed; its cycle is finite
+  - No randomness, no player-seeking, no reaction to player position anywhere in the behaviour
+  - Contact kills the player
+  - A test proves two runs with identical input produce identical guardian positions at every tick
+- [ ] S-22 Ladders | model: sonnet | autopilot | Systems card | phase 1 | deps: S-21 | est: 35K tokens, 0.5 Claude h, 0 h human
+  - Climb up and down while overlapping a ladder tile; step off either side onto solid ground
+  - Jumping from a ladder uses the same fixed arc
+  - Edge cases covered by unit tests: ladder top, ladder bottom, ladder beside a wall
+- [ ] S-23 Jewels and the gate | model: sonnet | autopilot | Systems card | phase 1 | deps: S-20, F-05 | est: 35K tokens, 0.5 Claude h, 0 h human
+  - Every jewel in a level is required; collecting the last one opens the gate
+  - Entering the open gate completes the level
+  - Collection is permanent for the attempt and restored on death to checkpoint
 - [ ] P-04 Install to home screen, offline play, and saves | model: sonnet | autopilot | Platform card | phase 1 | deps: F-02 | est: 20K tokens, 0.5 Claude h, 0.5 h human
   - Installs from Safari and opens full-screen in landscape
   - Plays with no connection
   - Progress survives closing the app
-- [ ] P-01 Input layer for touch, controller, and keyboard | model: sonnet | autopilot | Platform card | phase 1 | deps: S-01 | est: 25K tokens, 0.5 Claude h, 0 h human
-  - All gameplay reads actions, not raw input
-  - Remapping is saved per device
-- [ ] A-01 Code-drawn art and palettes | model: sonnet | autopilot | Art card | phase 1 | deps: S-01 | est: 50K tokens, 1 Claude h, 1 h human
-  - Player, tiles, and props packed into one texture atlas
-  - Palettes swap at runtime, ready for New Game+
-  - You sign off on the art direction
-- [ ] S-02 Player movement and feel | model: opus | autopilot | Systems card | phase 1 | deps: S-01, P-01 | est: 50K tokens, 1.5 Claude h, 2 h human
-  - Coyote time, jump buffer, variable jump height, and ladder climbing
-  - Every feel value lives in one tunables file
-  - Frame-exact tests for the timing windows
-- [ ] P-02 Touch controls | model: sonnet | autopilot | Platform card | phase 1 | deps: P-01 | est: 35K tokens, 0.5 Claude h, 1 h human
-  - Move and jump work at the same time
-  - No page scroll, zoom, or text selection during play
-  - Size, opacity, and left-handed layout options
-- [ ] P-03 Controller support | model: sonnet | autopilot | Platform card | phase 1 | deps: P-01 | est: 25K tokens, 0.5 Claude h, 0.5 h human
-  - Xbox and PlayStation controllers work on your phone
-  - Disconnecting mid-game pauses safely
-  - Every menu works without touching the screen
 
 ## Building (limit 2)
 
@@ -52,74 +49,233 @@ Empty
 
 ## Human QA (limit 3)
 
-- [ ] F-03 Level data schema and loader | model: opus | autopilot | Foundation card | phase 1 | deps: F-01 | est: 35K tokens, 1 Claude h, 0.5 h human
-  - JSON Schema covers rooms, tiles, entities, safe, standard, and expert routes, critical path, and seed
-  - The loader rejects a malformed level with a message naming the problem
-  - Game and validator import the same model
+Empty
 
 ## Backlog
 
-- [ ] S-03 Core mechanics | model: sonnet | autopilot | Systems card | phase 1 | deps: S-02, F-03 | est: 55K tokens, 1 Claude h, 0 h human
-  - Every entity is placed and configured from level data
-  - Each interaction has a unit test
-  - Required and optional treasure are tracked separately
-- [ ] S-04 Checkpoints, safe saves, and room reset | model: opus | autopilot | Systems card | phase 1 | deps: S-03, T-01 | est: 55K tokens, 1.5 Claude h, 0 h human
-  - A checkpoint saves only if the exit is still reachable from that state
-  - Restart room and restart from checkpoint are always available
-  - Game over returns to the last safe checkpoint
-- [ ] T-02 QA menu, debug overlays, and critical-path view | model: sonnet | autopilot | Tooling card | phase 1 | deps: S-03 | est: 35K tokens, 0.5 Claude h, 0 h human
-  - Teleport, spawn key, reset puzzle, invulnerability, overlays, and critical-path view in dev builds
+- [ ] S-24 Breakable blocks and the axe | model: opus | autopilot | Systems card | phase 1 | deps: S-23 | est: 55K tokens, 1.5 Claude h, 0 h human
+  - An axe or chisel is found in the level with a limited number of uses
+  - One use breaks one breakable block or kills one guardian; uses are never refunded
+  - Breaking is permanent for the attempt and restored on death to checkpoint
+  - Breakable blocks are visually distinct from solid at a glance
+- [ ] S-26 Death, checkpoints and restart | model: opus | autopilot | Systems card | phase 1 | deps: S-24, S-25 | est: 45K tokens, 1 Claude h, 0 h human
+  - Guardian or spike contact kills; death returns to the last checkpoint or the level start
+  - A checkpoint is written only when the level is provably completable from that state
+  - Restart level is always available from the pause menu
+  - Checkpoint state covers jewels collected, blocks broken and axe uses left
+- [ ] T-20 Validator v2: state graph and solvability | model: opus | autopilot | Tooling card | phase 1 | deps: F-05, S-24, S-25 | est: 85K tokens, 2.5 Claude h, 0 h human
+  - State is player cell, vertical state, jewels collected, blocks broken, axe uses left, and guardian phase
+  - npm run validate fails if any reachable non-death state cannot collect the remaining jewels and reach the gate
+  - Proves no jewel unreachable, no axe required but absent, and no breakable block destroyable into an unwinnable state
+  - The report names each dead state with an input sequence that reproduces it
+  - Completes in under a minute per level
+- [ ] T-21 Validator v2: jump clearance | model: opus | autopilot | Tooling card | phase 1 | deps: S-21, T-20 | est: 45K tokens, 1.5 Claude h, 0 h human
+  - Sweeps the fixed arc tile by tile for every jump a surviving route requires
+  - Fails the level if any required jump's arc clips solid geometry
+  - The report names the jump and the tile it clips
+- [ ] T-22 Validator v2: timing margin | model: opus | autopilot | Tooling card | phase 1 | deps: S-25, T-20 | est: 45K tokens, 1.5 Claude h, 0 h human
+  - Computes the success window for every required guardian passage
+  - Fails the level when a window is below the gate's floor in SPEC 25
+  - A safe route needing frame-perfect input is a failure, not a warning
+- [ ] P-01 Input layer for touch, controller, and keyboard | model: sonnet | autopilot | Platform card | phase 1 | deps: S-21 | est: 25K tokens, 0.5 Claude h, 0 h human
+  - All gameplay reads actions - run, jump, climb, use axe - not raw input
+  - Remapping is saved per device
+- [ ] P-02 Touch controls | model: sonnet | autopilot | Platform card | phase 1 | deps: P-01 | est: 35K tokens, 0.5 Claude h, 1 h human
+  - Run and jump work at the same time
+  - No page scroll, zoom, or text selection during play
+  - Size, opacity, and left-handed layout options
+- [ ] P-03 Controller support | model: sonnet | autopilot | Platform card | phase 1 | deps: P-01 | est: 25K tokens, 0.5 Claude h, 0.5 h human
+  - Xbox and PlayStation controllers work on your phone
+  - Disconnecting mid-game pauses safely
+  - Every menu works without touching the screen
+- [ ] A-01 Code-drawn art and palettes | model: sonnet | autopilot | Art card | phase 1 | deps: S-20 | est: 50K tokens, 1 Claude h, 1 h human
+  - 16x16 tiles, flat fills, two-frame animation at 8fps, never a third frame
+  - Guardians distinct in silhouette, not only colour
+  - Palettes swap at runtime, ready for New Game+
+  - You sign off on the art direction
+- [ ] T-02 QA menu, debug overlays, and route view | model: sonnet | autopilot | Tooling card | phase 1 | deps: S-26 | est: 35K tokens, 0.5 Claude h, 0 h human
+  - Teleport, give axe, clear jewels, invulnerability, guardian phase overlay and route view in dev builds
   - Release builds contain none of it, checked by a test
-- [ ] T-03 Adversarial bot runs | model: sonnet | autopilot | Tooling card | phase 1 | deps: T-01, S-03 | est: 40K tokens, 0.5 Claude h, 0 h human
+- [ ] T-03 Adversarial bot runs | model: sonnet | autopilot | Tooling card | phase 1 | deps: T-20, S-26 | est: 40K tokens, 0.5 Claude h, 0 h human
   - npm run bots plays random and solver-guided runs on every level
-  - Stuck states and crashes are saved with a replay seed
-  - Deaths are logged by the spec's cause categories
-- [ ] S-05 Trapped-player detection and item recovery | model: opus | autopilot | Systems card | phase 1 | deps: S-04, T-03 | est: 40K tokens, 1 Claude h, 0 h human
-  - Return to last safe position appears only when the player is truly trapped
-  - Required items lost out of reach return to where they started
-  - Bot runs can't produce a softlock in the test rooms
+  - Dead states and crashes are saved with a replay seed
+  - Deaths are logged by cause: guardian, spike
 - [ ] U-01 Menus, HUD, pause, and settings | model: sonnet | autopilot | Platform card | phase 1 | deps: P-02, P-03 | est: 40K tokens, 0.5 Claude h, 0.5 h human
-  - Every screen works with only touch or only a controller
-  - Respects safe areas and locks to landscape
-  - Text stays legible on a TV
-- [ ] P-05 Phone performance budget | model: opus | autopilot | Platform card | phase 1 | deps: S-03, A-01 | est: 30K tokens, 1 Claude h, 0.5 h human
-  - Holds 60 fps in the busiest test room on your phone
-  - A frame-time check runs in CI
+  - Jewel count, axe uses and deaths visible during play
+  - Pause offers resume, restart from checkpoint, restart level, gate select, settings
+- [ ] P-05 Phone performance budget | model: opus | autopilot | Platform card | phase 1 | deps: S-26, A-01 | est: 30K tokens, 1 Claude h, 0.5 h human
+  - 60 FPS on a mid-range phone with all guardians active
+  - Bundle stays inside the 5 MB uncompressed budget
 - [ ] P-06 TV and controller test | model: human+opus | needs-you | Platform card | phase 1 | deps: U-01, P-03, F-04 | est: 10K tokens, 0.5 Claude h, 2 h human
-  - Measure the delay from button press to TV picture
-  - Decide whether TV play needs a small timing assist
-  - Check menus and HUD from the couch
-- [ ] L-00 Tutorial | model: opus | autopilot | Level card | phase 1 | deps: S-03, S-04, T-01, T-02 | est: 50K tokens, 1.5 Claude h, 2 h human
-  - Each mechanic is introduced alone before anything combines it
-  - Critical-path doc answers every question in spec section 52
-  - Validator finds no dead states and bots find no softlocks
-  - Safe, standard, and expert routes, with optional treasure never required
-  - First-time, experienced, and adversarial playtests pass
-  - Difficulty lands in the gate's target range (1 of 10)
-- [ ] L-11 Gate I-1: Movement and treasure | model: sonnet | autopilot | Level card | phase 1 | deps: L-00 | est: 35K tokens, 0.5 Claude h, 2 h human
-  - Critical-path doc answers every question in spec section 52
-  - Validator finds no dead states and bots find no softlocks
-  - Safe, standard, and expert routes, with optional treasure never required
-  - First-time, experienced, and adversarial playtests pass
-  - Difficulty lands in the gate's target range (1–2 of 10)
-- [ ] L-12 Gate I-2: Keys and doors | model: sonnet | autopilot | Level card | phase 1 | deps: L-11 | est: 35K tokens, 0.5 Claude h, 2 h human
-  - Critical-path doc answers every question in spec section 52
-  - Validator finds no dead states and bots find no softlocks
-  - Safe, standard, and expert routes, with optional treasure never required
-  - First-time, experienced, and adversarial playtests pass
-  - Difficulty lands in the gate's target range (1–2 of 10)
-- [ ] L-13 Gate I-3: Ladders and vertical routes | model: sonnet | autopilot | Level card | phase 1 | deps: L-12 | est: 35K tokens, 0.5 Claude h, 2 h human
-  - Critical-path doc answers every question in spec section 52
-  - Validator finds no dead states and bots find no softlocks
-  - Safe, standard, and expert routes, with optional treasure never required
-  - First-time, experienced, and adversarial playtests pass
-  - Difficulty lands in the gate's target range (1–2 of 10)
-- [ ] L-14 Gate I-4: Mastery with pressure plates | model: sonnet | autopilot | Level card | phase 1 | deps: L-13 | est: 45K tokens, 1 Claude h, 2 h human
-  - Critical-path doc answers every question in spec section 52
-  - Validator finds no dead states and bots find no softlocks
-  - Safe, standard, and expert routes, with optional treasure never required
-  - First-time, experienced, and adversarial playtests pass
-  - Difficulty lands in the gate's target range (1–2 of 10)
+  - Full run with a controller on the TV
+  - Integer scaling looks correct at TV resolution
+- [ ] L-00 Tutorial: run, jump, collect, gate | model: opus | autopilot | Level card | phase 1 | deps: S-26, T-20, T-02 | est: 50K tokens, 1.5 Claude h, 2 h human
+  - Teaches run, jump and collect with no guardian and no axe
+  - Finishable first time without repeated deaths
+  - Every jewel reachable and the gate reachable; validator reports no dead states
+  - Every required jump clears with headroom; no required passage is frame-perfect
+  - Difficulty inside the gate's target range and timing margin above its floor (SPEC 25)
+  - Critical-path doc answers all 52 questions (SPEC 52)
+- [ ] L-11 Gate I-1: jumping gaps | model: sonnet | autopilot | Level card | phase 1 | deps: L-00 | est: 35K tokens, 0.5 Claude h, 2 h human
+  - Every jewel reachable and the gate reachable; validator reports no dead states
+  - Every required jump clears with headroom; no required passage is frame-perfect
+  - Difficulty inside the gate's target range and timing margin above its floor (SPEC 25)
+  - Critical-path doc answers all 52 questions (SPEC 52)
+- [ ] L-12 Gate I-2: ladders | model: sonnet | autopilot | Level card | phase 1 | deps: L-11, S-22 | est: 35K tokens, 0.5 Claude h, 2 h human
+  - Every jewel reachable and the gate reachable; validator reports no dead states
+  - Every required jump clears with headroom; no required passage is frame-perfect
+  - Difficulty inside the gate's target range and timing margin above its floor (SPEC 25)
+  - Critical-path doc answers all 52 questions (SPEC 52)
+- [ ] L-13 Gate I-3: the first guardian | model: sonnet | autopilot | Level card | phase 1 | deps: L-12, S-25 | est: 35K tokens, 0.5 Claude h, 2 h human
+  - Every jewel reachable and the gate reachable; validator reports no dead states
+  - Every required jump clears with headroom; no required passage is frame-perfect
+  - Difficulty inside the gate's target range and timing margin above its floor (SPEC 25)
+  - Critical-path doc answers all 52 questions (SPEC 52)
+- [ ] L-14 Gate I-4: jewel order matters | model: sonnet | autopilot | Level card | phase 1 | deps: L-13 | est: 45K tokens, 1 Claude h, 2 h human
+  - Every jewel reachable and the gate reachable; validator reports no dead states
+  - Every required jump clears with headroom; no required passage is frame-perfect
+  - Difficulty inside the gate's target range and timing margin above its floor (SPEC 25)
+  - Critical-path doc answers all 52 questions (SPEC 52)
+- [ ] L-21 Gate II-1: the axe | model: sonnet | autopilot | Level card | phase 2 | deps: L-14, S-24 | est: 40K tokens, 0.5 Claude h, 2 h human
+  - Every jewel reachable and the gate reachable; validator reports no dead states
+  - Every required jump clears with headroom; no required passage is frame-perfect
+  - Difficulty inside the gate's target range and timing margin above its floor (SPEC 25)
+  - Critical-path doc answers all 52 questions (SPEC 52)
+- [ ] L-22 Gate II-2: breaking to descend | model: sonnet | autopilot | Level card | phase 2 | deps: L-21 | est: 40K tokens, 0.5 Claude h, 2 h human
+  - Every jewel reachable and the gate reachable; validator reports no dead states
+  - Every required jump clears with headroom; no required passage is frame-perfect
+  - Difficulty inside the gate's target range and timing margin above its floor (SPEC 25)
+  - Critical-path doc answers all 52 questions (SPEC 52)
+- [ ] L-23 Gate II-3: two guardians | model: sonnet | autopilot | Level card | phase 2 | deps: L-22 | est: 40K tokens, 0.5 Claude h, 2 h human
+  - Every jewel reachable and the gate reachable; validator reports no dead states
+  - Every required jump clears with headroom; no required passage is frame-perfect
+  - Difficulty inside the gate's target range and timing margin above its floor (SPEC 25)
+  - Critical-path doc answers all 52 questions (SPEC 52)
+- [ ] L-24 Gate II-4: axe or passage | model: sonnet | autopilot | Level card | phase 2 | deps: L-23 | est: 45K tokens, 1 Claude h, 2 h human
+  - Every jewel reachable and the gate reachable; validator reports no dead states
+  - Every required jump clears with headroom; no required passage is frame-perfect
+  - Difficulty inside the gate's target range and timing margin above its floor (SPEC 25)
+  - Critical-path doc answers all 52 questions (SPEC 52)
+- [ ] L-25 Gate II-5: mastery of the first two ideas | model: sonnet | autopilot | Level card | phase 2 | deps: L-24 | est: 50K tokens, 1 Claude h, 2 h human
+  - Every jewel reachable and the gate reachable; validator reports no dead states
+  - Every required jump clears with headroom; no required passage is frame-perfect
+  - Difficulty inside the gate's target range and timing margin above its floor (SPEC 25)
+  - Critical-path doc answers all 52 questions (SPEC 52)
+- [ ] L-31 Gate III-1: scarce axe | model: opus | autopilot | Level card | phase 3 | deps: L-25 | est: 45K tokens, 1 Claude h, 2 h human
+  - Every jewel reachable and the gate reachable; validator reports no dead states
+  - Every required jump clears with headroom; no required passage is frame-perfect
+  - Difficulty inside the gate's target range and timing margin above its floor (SPEC 25)
+  - Critical-path doc answers all 52 questions (SPEC 52)
+- [ ] L-32 Gate III-2: spikes below | model: opus | autopilot | Level card | phase 3 | deps: L-31 | est: 45K tokens, 1 Claude h, 2 h human
+  - Every jewel reachable and the gate reachable; validator reports no dead states
+  - Every required jump clears with headroom; no required passage is frame-perfect
+  - Difficulty inside the gate's target range and timing margin above its floor (SPEC 25)
+  - Critical-path doc answers all 52 questions (SPEC 52)
+- [ ] L-33 Gate III-3: patrol gaps | model: opus | autopilot | Level card | phase 3 | deps: L-32 | est: 45K tokens, 1 Claude h, 2 h human
+  - Every jewel reachable and the gate reachable; validator reports no dead states
+  - Every required jump clears with headroom; no required passage is frame-perfect
+  - Difficulty inside the gate's target range and timing margin above its floor (SPEC 25)
+  - Critical-path doc answers all 52 questions (SPEC 52)
+- [ ] L-34 Gate III-4: the block you must not break | model: opus | autopilot | Level card | phase 3 | deps: L-33 | est: 50K tokens, 1.5 Claude h, 2 h human
+  - Every jewel reachable and the gate reachable; validator reports no dead states
+  - Every required jump clears with headroom; no required passage is frame-perfect
+  - Difficulty inside the gate's target range and timing margin above its floor (SPEC 25)
+  - Critical-path doc answers all 52 questions (SPEC 52)
+- [ ] L-35 Gate III-5: mastery | model: opus | autopilot | Level card | phase 3 | deps: L-34 | est: 55K tokens, 1.5 Claude h, 2 h human
+  - Every jewel reachable and the gate reachable; validator reports no dead states
+  - Every required jump clears with headroom; no required passage is frame-perfect
+  - Difficulty inside the gate's target range and timing margin above its floor (SPEC 25)
+  - Critical-path doc answers all 52 questions (SPEC 52)
+- [ ] L-41 Gate IV-1: plan before you move | model: opus | autopilot | Level card | phase 4 | deps: L-35 | est: 50K tokens, 1.5 Claude h, 2 h human
+  - Every jewel reachable and the gate reachable; validator reports no dead states
+  - Every required jump clears with headroom; no required passage is frame-perfect
+  - Difficulty inside the gate's target range and timing margin above its floor (SPEC 25)
+  - Critical-path doc answers all 52 questions (SPEC 52)
+- [ ] L-42 Gate IV-2: guardian as a clock | model: opus | autopilot | Level card | phase 4 | deps: L-41 | est: 50K tokens, 1.5 Claude h, 2 h human
+  - Every jewel reachable and the gate reachable; validator reports no dead states
+  - Every required jump clears with headroom; no required passage is frame-perfect
+  - Difficulty inside the gate's target range and timing margin above its floor (SPEC 25)
+  - Critical-path doc answers all 52 questions (SPEC 52)
+- [ ] L-43 Gate IV-3: long jewel route | model: opus | autopilot | Level card | phase 4 | deps: L-42 | est: 50K tokens, 1.5 Claude h, 2 h human
+  - Every jewel reachable and the gate reachable; validator reports no dead states
+  - Every required jump clears with headroom; no required passage is frame-perfect
+  - Difficulty inside the gate's target range and timing margin above its floor (SPEC 25)
+  - Critical-path doc answers all 52 questions (SPEC 52)
+- [ ] L-44 Gate IV-4: one axe use, two needs | model: opus | autopilot | Level card | phase 4 | deps: L-43 | est: 55K tokens, 1.5 Claude h, 2 h human
+  - Every jewel reachable and the gate reachable; validator reports no dead states
+  - Every required jump clears with headroom; no required passage is frame-perfect
+  - Difficulty inside the gate's target range and timing margin above its floor (SPEC 25)
+  - Critical-path doc answers all 52 questions (SPEC 52)
+- [ ] L-45 Gate IV-5: mastery | model: opus | autopilot | Level card | phase 4 | deps: L-44 | est: 60K tokens, 1.5 Claude h, 2 h human
+  - Every jewel reachable and the gate reachable; validator reports no dead states
+  - Every required jump clears with headroom; no required passage is frame-perfect
+  - Difficulty inside the gate's target range and timing margin above its floor (SPEC 25)
+  - Critical-path doc answers all 52 questions (SPEC 52)
+- [ ] L-51 Gate V-1: no new ideas, more of them | model: opus | autopilot | Level card | phase 5 | deps: L-45 | est: 50K tokens, 1.5 Claude h, 2 h human
+  - Every jewel reachable and the gate reachable; validator reports no dead states
+  - Every required jump clears with headroom; no required passage is frame-perfect
+  - Difficulty inside the gate's target range and timing margin above its floor (SPEC 25)
+  - Critical-path doc answers all 52 questions (SPEC 52)
+- [ ] L-52 Gate V-2: three guardians | model: opus | autopilot | Level card | phase 5 | deps: L-51 | est: 50K tokens, 1.5 Claude h, 2 h human
+  - Every jewel reachable and the gate reachable; validator reports no dead states
+  - Every required jump clears with headroom; no required passage is frame-perfect
+  - Difficulty inside the gate's target range and timing margin above its floor (SPEC 25)
+  - Critical-path doc answers all 52 questions (SPEC 52)
+- [ ] L-53 Gate V-3: breaking under patrol | model: opus | autopilot | Level card | phase 5 | deps: L-52 | est: 55K tokens, 1.5 Claude h, 2 h human
+  - Every jewel reachable and the gate reachable; validator reports no dead states
+  - Every required jump clears with headroom; no required passage is frame-perfect
+  - Difficulty inside the gate's target range and timing margin above its floor (SPEC 25)
+  - Critical-path doc answers all 52 questions (SPEC 52)
+- [ ] L-54 Gate V-4: the high route | model: opus | autopilot | Level card | phase 5 | deps: L-53 | est: 55K tokens, 1.5 Claude h, 2 h human
+  - Every jewel reachable and the gate reachable; validator reports no dead states
+  - Every required jump clears with headroom; no required passage is frame-perfect
+  - Difficulty inside the gate's target range and timing margin above its floor (SPEC 25)
+  - Critical-path doc answers all 52 questions (SPEC 52)
+- [ ] L-55 Gate V-5: mastery | model: opus | autopilot | Level card | phase 5 | deps: L-54 | est: 60K tokens, 1.5 Claude h, 2 h human
+  - Every jewel reachable and the gate reachable; validator reports no dead states
+  - Every required jump clears with headroom; no required passage is frame-perfect
+  - Difficulty inside the gate's target range and timing margin above its floor (SPEC 25)
+  - Critical-path doc answers all 52 questions (SPEC 52)
+- [ ] L-61 Gate VI-1: narrow shafts | model: opus | autopilot | Level card | phase 5 | deps: L-55 | est: 55K tokens, 1.5 Claude h, 2 h human
+  - Every jewel reachable and the gate reachable; validator reports no dead states
+  - Every required jump clears with headroom; no required passage is frame-perfect
+  - Difficulty inside the gate's target range and timing margin above its floor (SPEC 25)
+  - Critical-path doc answers all 52 questions (SPEC 52)
+- [ ] L-62 Gate VI-2: guardians as the only clock | model: opus | autopilot | Level card | phase 5 | deps: L-61 | est: 55K tokens, 1.5 Claude h, 2 h human
+  - Every jewel reachable and the gate reachable; validator reports no dead states
+  - Every required jump clears with headroom; no required passage is frame-perfect
+  - Difficulty inside the gate's target range and timing margin above its floor (SPEC 25)
+  - Critical-path doc answers all 52 questions (SPEC 52)
+- [ ] L-63 Gate VI-3: every block counts | model: opus | autopilot | Level card | phase 5 | deps: L-62 | est: 55K tokens, 1.5 Claude h, 2 h human
+  - Every jewel reachable and the gate reachable; validator reports no dead states
+  - Every required jump clears with headroom; no required passage is frame-perfect
+  - Difficulty inside the gate's target range and timing margin above its floor (SPEC 25)
+  - Critical-path doc answers all 52 questions (SPEC 52)
+- [ ] L-64 Gate VI-4: the long descent | model: opus | autopilot | Level card | phase 5 | deps: L-63 | est: 60K tokens, 1.5 Claude h, 2 h human
+  - Every jewel reachable and the gate reachable; validator reports no dead states
+  - Every required jump clears with headroom; no required passage is frame-perfect
+  - Difficulty inside the gate's target range and timing margin above its floor (SPEC 25)
+  - Critical-path doc answers all 52 questions (SPEC 52)
+- [ ] L-65 Gate VI-5: mastery | model: opus | autopilot | Level card | phase 5 | deps: L-64 | est: 65K tokens, 1.5 Claude h, 2 h human
+  - Every jewel reachable and the gate reachable; validator reports no dead states
+  - Every required jump clears with headroom; no required passage is frame-perfect
+  - Difficulty inside the gate's target range and timing margin above its floor (SPEC 25)
+  - Critical-path doc answers all 52 questions (SPEC 52)
+- [ ] L-71 Gate VII-1: the shortest | model: opus | autopilot | Level card | phase 5 | deps: L-65 | est: 55K tokens, 1.5 Claude h, 2 h human
+  - Every jewel reachable and the gate reachable; validator reports no dead states
+  - Every required jump clears with headroom; no required passage is frame-perfect
+  - Difficulty inside the gate's target range and timing margin above its floor (SPEC 25)
+  - Critical-path doc answers all 52 questions (SPEC 52)
+- [ ] L-72 Gate VII-2: the hardest | model: opus | autopilot | Level card | phase 5 | deps: L-71 | est: 70K tokens, 2 Claude h, 3 h human
+  - Every jewel reachable and the gate reachable; validator reports no dead states
+  - Every required jump clears with headroom; no required passage is frame-perfect
+  - Difficulty inside the gate's target range and timing margin above its floor (SPEC 25)
+  - Critical-path doc answers all 52 questions (SPEC 52)
+- [ ] L-73 Gate VII-3: the last gate | model: opus | autopilot | Level card | phase 5 | deps: L-72, S-11 | est: 80K tokens, 2 Claude h, 3 h human
+  - Every jewel reachable and the gate reachable; validator reports no dead states
+  - Every required jump clears with headroom; no required passage is frame-perfect
+  - Difficulty inside the gate's target range and timing margin above its floor (SPEC 25)
+  - Critical-path doc answers all 52 questions (SPEC 52)
 - [ ] Q-01 Gate I sweep report | model: haiku | autopilot | QA card | phase 1 | deps: L-14 | est: 15K tokens, 0.5 Claude h, 0 h human
   - Validator and bot results for every level built so far
   - Deaths by cause and difficulty against each gate's target
@@ -127,330 +283,67 @@ Empty
 - [ ] R-01 Phase 1 review and re-estimate | model: human+opus | needs-you | QA card | phase 1 | deps: Q-01, P-06 | est: 10K tokens, 0.5 Claude h, 2 h human
   - Full slice played on phone and on TV
   - Remaining estimates updated from real token use
-  - Decide whether to keep the model routing
-- [ ] S-06 Push blocks and block reset | model: opus | autopilot | Systems card | phase 2 | deps: S-04 | est: 45K tokens, 1 Claude h, 0 h human
-  - Blocks push, fall, and hold down plates
-  - Every block room has a reset or automatic recovery
-  - Room reset restores blocks exactly
-- [ ] T-04 Validator v2: push-block deadlocks | model: opus | autopilot | Tooling card | phase 2 | deps: T-01, S-06 | est: 85K tokens, 2 Claude h, 0 h human
-  - Detects corner, wall, and pit deadlocks
-  - Search finishes in under a minute per level in CI
-  - Proves every block puzzle is recoverable or resettable
-- [ ] S-07 Traps: spikes, collapsing floors, and darts | model: sonnet | autopilot | Systems card | phase 2 | deps: S-03 | est: 40K tokens, 0.5 Claude h, 0 h human
-  - Every trap telegraphs before it triggers
-  - Deaths are tagged with their cause
-- [ ] S-08 Enemy behaviors: patrol, chaser, and guardian | model: sonnet | autopilot | Systems card | phase 2 | deps: S-03 | est: 45K tokens, 1 Claude h, 0 h human
-  - Patterns are readable and consistent
-  - Enemies can press plates and trip switches
-  - Patrol routes show in the debug overlay
-- [ ] S-12 Throwing dagger | model: sonnet | autopilot | Systems card | phase 2 | deps: S-08 | est: 30K tokens, 0.5 Claude h, 0 h human
-  - Stuns or defeats enemies
-  - Never required on a critical path, checked by the validator
-  - Counted for the No Weapon challenge
-- [ ] S-09 Timed mechanisms and water | model: opus | autopilot | Systems card | phase 2 | deps: S-06 | est: 50K tokens, 1.5 Claude h, 0 h human
-  - Timers are visible to the player
-  - Water fills and drains the same way every time
-  - The validator models timer and water states
-- [ ] T-05 Level editor | model: sonnet | autopilot | Tooling card | phase 2 | deps: F-03, T-01 | est: 60K tokens, 1 Claude h, 1 h human
-  - Place tiles and entities, then run the validator from the editor
-  - Exports exactly what the game loads
-  - Works on a tablet or laptop
-- [ ] T-06 Difficulty and death analytics | model: sonnet | autopilot | Tooling card | phase 2 | deps: T-03 | est: 30K tokens, 0.5 Claude h, 0 h human
-  - Per-level deaths, time, and route choice
-  - Flags levels outside their gate's difficulty target
-- [ ] A-02 Art for Gates II–IV | model: sonnet | autopilot | Art card | phase 2 | deps: A-01 | est: 40K tokens, 0.5 Claude h, 0.5 h human
-  - Own palette and tiles per gate
-  - Traps and enemies readable at phone size
-- [ ] L-21 Gate II-1: Push blocks | model: sonnet | autopilot | Level card | phase 2 | deps: L-14, S-06, T-04 | est: 40K tokens, 0.5 Claude h, 2 h human
-  - Critical-path doc answers every question in spec section 52
-  - Validator finds no dead states and bots find no softlocks
-  - Safe, standard, and expert routes, with optional treasure never required
-  - First-time, experienced, and adversarial playtests pass
-  - Difficulty lands in the gate's target range (2–3 of 10)
-- [ ] L-22 Gate II-2: Blocks and keys | model: sonnet | autopilot | Level card | phase 2 | deps: L-21 | est: 40K tokens, 0.5 Claude h, 2 h human
-  - Critical-path doc answers every question in spec section 52
-  - Validator finds no dead states and bots find no softlocks
-  - Safe, standard, and expert routes, with optional treasure never required
-  - First-time, experienced, and adversarial playtests pass
-  - Difficulty lands in the gate's target range (2–3 of 10)
-- [ ] L-23 Gate II-3: Blocks on plates | model: sonnet | autopilot | Level card | phase 2 | deps: L-22 | est: 40K tokens, 0.5 Claude h, 2 h human
-  - Critical-path doc answers every question in spec section 52
-  - Validator finds no dead states and bots find no softlocks
-  - Safe, standard, and expert routes, with optional treasure never required
-  - First-time, experienced, and adversarial playtests pass
-  - Difficulty lands in the gate's target range (2–3 of 10)
-- [ ] L-24 Gate II-4: Blocks and patrols | model: sonnet | autopilot | Level card | phase 2 | deps: L-23, S-08 | est: 45K tokens, 1 Claude h, 2 h human
-  - Critical-path doc answers every question in spec section 52
-  - Validator finds no dead states and bots find no softlocks
-  - Safe, standard, and expert routes, with optional treasure never required
-  - First-time, experienced, and adversarial playtests pass
-  - Difficulty lands in the gate's target range (2–3 of 10)
-- [ ] L-25 Gate II-5: Mastery with block routing | model: sonnet | autopilot | Level card | phase 2 | deps: L-24 | est: 50K tokens, 1 Claude h, 2 h human
-  - Critical-path doc answers every question in spec section 52
-  - Validator finds no dead states and bots find no softlocks
-  - Safe, standard, and expert routes, with optional treasure never required
-  - First-time, experienced, and adversarial playtests pass
-  - Difficulty lands in the gate's target range (2–3 of 10)
 - [ ] Q-02 Gate II sweep report | model: haiku | autopilot | QA card | phase 2 | deps: L-25 | est: 15K tokens, 0.5 Claude h, 0 h human
-  - Validator and bot results for every level built so far
-  - Deaths by cause and difficulty against each gate's target
+  - Validator and bot results for every level in the gate
+  - Deaths by cause and difficulty against the gate's target
   - Lists any card that should reopen
-- [ ] L-31 Gate III-1: Traps | model: opus | autopilot | Level card | phase 2 | deps: L-25, S-07 | est: 40K tokens, 1 Claude h, 2 h human
-  - Critical-path doc answers every question in spec section 52
-  - Validator finds no dead states and bots find no softlocks
-  - Safe, standard, and expert routes, with optional treasure never required
-  - First-time, experienced, and adversarial playtests pass
-  - Difficulty lands in the gate's target range (3–4 of 10)
-- [ ] L-32 Gate III-2: Collapsing floors | model: opus | autopilot | Level card | phase 2 | deps: L-31 | est: 40K tokens, 1 Claude h, 2 h human
-  - Critical-path doc answers every question in spec section 52
-  - Validator finds no dead states and bots find no softlocks
-  - Safe, standard, and expert routes, with optional treasure never required
-  - First-time, experienced, and adversarial playtests pass
-  - Difficulty lands in the gate's target range (3–4 of 10)
-- [ ] L-33 Gate III-3: Enemy positioning | model: opus | autopilot | Level card | phase 2 | deps: L-32 | est: 45K tokens, 1 Claude h, 2 h human
-  - Critical-path doc answers every question in spec section 52
-  - Validator finds no dead states and bots find no softlocks
-  - Safe, standard, and expert routes, with optional treasure never required
-  - First-time, experienced, and adversarial playtests pass
-  - Difficulty lands in the gate's target range (3–4 of 10)
-- [ ] L-34 Gate III-4: Keys, switches, and enemies | model: opus | autopilot | Level card | phase 2 | deps: L-33, S-12 | est: 45K tokens, 1 Claude h, 2 h human
-  - Critical-path doc answers every question in spec section 52
-  - Validator finds no dead states and bots find no softlocks
-  - Safe, standard, and expert routes, with optional treasure never required
-  - First-time, experienced, and adversarial playtests pass
-  - Difficulty lands in the gate's target range (3–4 of 10)
-- [ ] L-35 Gate III-5: Mastery with traps and enemies | model: opus | autopilot | Level card | phase 2 | deps: L-34 | est: 55K tokens, 1.5 Claude h, 2 h human
-  - Critical-path doc answers every question in spec section 52
-  - Validator finds no dead states and bots find no softlocks
-  - Safe, standard, and expert routes, with optional treasure never required
-  - First-time, experienced, and adversarial playtests pass
-  - Difficulty lands in the gate's target range (3–4 of 10)
 - [ ] Q-03 Gate III sweep report | model: haiku | autopilot | QA card | phase 2 | deps: L-35 | est: 15K tokens, 0.5 Claude h, 0 h human
-  - Validator and bot results for every level built so far
-  - Deaths by cause and difficulty against each gate's target
+  - Validator and bot results for every level in the gate
+  - Deaths by cause and difficulty against the gate's target
   - Lists any card that should reopen
-- [ ] L-41 Gate IV-1: Timed doors | model: opus | autopilot | Level card | phase 2 | deps: L-35, S-09 | est: 45K tokens, 1 Claude h, 2 h human
-  - Critical-path doc answers every question in spec section 52
-  - Validator finds no dead states and bots find no softlocks
-  - Safe, standard, and expert routes, with optional treasure never required
-  - First-time, experienced, and adversarial playtests pass
-  - Difficulty lands in the gate's target range (4–5 of 10)
-- [ ] L-42 Gate IV-2: Water flow | model: opus | autopilot | Level card | phase 2 | deps: L-41 | est: 45K tokens, 1 Claude h, 2 h human
-  - Critical-path doc answers every question in spec section 52
-  - Validator finds no dead states and bots find no softlocks
-  - Safe, standard, and expert routes, with optional treasure never required
-  - First-time, experienced, and adversarial playtests pass
-  - Difficulty lands in the gate's target range (4–5 of 10)
-- [ ] L-43 Gate IV-3: Timers and blocks | model: opus | autopilot | Level card | phase 2 | deps: L-42 | est: 50K tokens, 1.5 Claude h, 2 h human
-  - Critical-path doc answers every question in spec section 52
-  - Validator finds no dead states and bots find no softlocks
-  - Safe, standard, and expert routes, with optional treasure never required
-  - First-time, experienced, and adversarial playtests pass
-  - Difficulty lands in the gate's target range (4–5 of 10)
-- [ ] L-44 Gate IV-4: Water and enemies | model: opus | autopilot | Level card | phase 2 | deps: L-43 | est: 50K tokens, 1.5 Claude h, 2 h human
-  - Critical-path doc answers every question in spec section 52
-  - Validator finds no dead states and bots find no softlocks
-  - Safe, standard, and expert routes, with optional treasure never required
-  - First-time, experienced, and adversarial playtests pass
-  - Difficulty lands in the gate's target range (4–5 of 10)
-- [ ] L-45 Gate IV-5: Mastery with the water puzzle | model: opus | autopilot | Level card | phase 2 | deps: L-44 | est: 60K tokens, 1.5 Claude h, 2 h human
-  - Critical-path doc answers every question in spec section 52
-  - Validator finds no dead states and bots find no softlocks
-  - Safe, standard, and expert routes, with optional treasure never required
-  - First-time, experienced, and adversarial playtests pass
-  - Difficulty lands in the gate's target range (4–5 of 10)
 - [ ] Q-04 Gate IV sweep report | model: haiku | autopilot | QA card | phase 2 | deps: L-45 | est: 15K tokens, 0.5 Claude h, 0 h human
-  - Validator and bot results for every level built so far
-  - Deaths by cause and difficulty against each gate's target
+  - Validator and bot results for every level in the gate
+  - Deaths by cause and difficulty against the gate's target
   - Lists any card that should reopen
-- [ ] R-02 Phase 2 review and retro | model: human+opus | needs-you | QA card | phase 2 | deps: Q-04 | est: 10K tokens, 0.5 Claude h, 2 h human
-  - Full run of Gates II–IV on your phone
-  - Difficulty curve checked against the analytics
-  - Estimates and model routing adjusted
-- [ ] S-10 Difficulty modes: Explorer, Standard, and Challenge | model: sonnet | autopilot | Systems card | phase 3 | deps: S-04 | est: 35K tokens, 0.5 Claude h, 0 h human
-  - Modes change timing windows, checkpoint density, and enemy aggression
-  - The validator runs every level in all three modes
-- [ ] S-11 Completion screen, stats, and rank | model: sonnet | autopilot | Systems card | phase 3 | deps: S-03 | est: 25K tokens, 0.5 Claude h, 0 h human
-  - Completion percentage, treasures, seals, secrets, time, and deaths
-  - Rank uses objective metrics only
-  - Unlocks New Game+
-- [ ] A-03 Art for Gates V–VII and the finale | model: sonnet | autopilot | Art card | phase 3 | deps: A-02 | est: 40K tokens, 0.5 Claude h, 0.5 h human
-  - Own palette and tiles per gate
-  - Visuals for the final sequence
-- [ ] U-02 Sound effects and ambient music | model: sonnet | autopilot | Platform card | phase 3 | deps: S-03 | est: 35K tokens, 0.5 Claude h, 0.5 h human
-  - Every action has a sound cue
-  - Separate music and effects volume
-  - Respects the phone's mute and pauses in the background
-- [ ] L-51 Gate V-1: Switch chains | model: opus | autopilot | Level card | phase 3 | deps: L-45 | est: 50K tokens, 1.5 Claude h, 2 h human
-  - Critical-path doc answers every question in spec section 52
-  - Validator finds no dead states and bots find no softlocks
-  - Safe, standard, and expert routes, with optional treasure never required
-  - First-time, experienced, and adversarial playtests pass
-  - Difficulty lands in the gate's target range (5–6 of 10)
-- [ ] L-52 Gate V-2: Blocks under timers | model: opus | autopilot | Level card | phase 3 | deps: L-51 | est: 50K tokens, 1.5 Claude h, 2 h human
-  - Critical-path doc answers every question in spec section 52
-  - Validator finds no dead states and bots find no softlocks
-  - Safe, standard, and expert routes, with optional treasure never required
-  - First-time, experienced, and adversarial playtests pass
-  - Difficulty lands in the gate's target range (5–6 of 10)
-- [ ] L-53 Gate V-3: Enemies trip the plates | model: opus | autopilot | Level card | phase 3 | deps: L-52 | est: 50K tokens, 1.5 Claude h, 2 h human
-  - Critical-path doc answers every question in spec section 52
-  - Validator finds no dead states and bots find no softlocks
-  - Safe, standard, and expert routes, with optional treasure never required
-  - First-time, experienced, and adversarial playtests pass
-  - Difficulty lands in the gate's target range (5–6 of 10)
-- [ ] L-54 Gate V-4: Risky treasure routes | model: opus | autopilot | Level card | phase 3 | deps: L-53 | est: 55K tokens, 1.5 Claude h, 2 h human
-  - Critical-path doc answers every question in spec section 52
-  - Validator finds no dead states and bots find no softlocks
-  - Safe, standard, and expert routes, with optional treasure never required
-  - First-time, experienced, and adversarial playtests pass
-  - Difficulty lands in the gate's target range (5–6 of 10)
-- [ ] L-55 Gate V-5: Water and traps | model: opus | autopilot | Level card | phase 3 | deps: L-54 | est: 55K tokens, 1.5 Claude h, 2 h human
-  - Critical-path doc answers every question in spec section 52
-  - Validator finds no dead states and bots find no softlocks
-  - Safe, standard, and expert routes, with optional treasure never required
-  - First-time, experienced, and adversarial playtests pass
-  - Difficulty lands in the gate's target range (5–6 of 10)
-- [ ] L-56 Gate V-6: Mastery | model: opus | autopilot | Level card | phase 3 | deps: L-55 | est: 60K tokens, 1.5 Claude h, 2 h human
-  - Critical-path doc answers every question in spec section 52
-  - Validator finds no dead states and bots find no softlocks
-  - Safe, standard, and expert routes, with optional treasure never required
-  - First-time, experienced, and adversarial playtests pass
-  - Difficulty lands in the gate's target range (5–6 of 10)
-- [ ] Q-05 Gate V sweep report | model: haiku | autopilot | QA card | phase 3 | deps: L-56 | est: 15K tokens, 0.5 Claude h, 0 h human
-  - Validator and bot results for every level built so far
-  - Deaths by cause and difficulty against each gate's target
+- [ ] Q-05 Gate V sweep report | model: haiku | autopilot | QA card | phase 3 | deps: L-55 | est: 15K tokens, 0.5 Claude h, 0 h human
+  - Validator and bot results for every level in the gate
+  - Deaths by cause and difficulty against the gate's target
   - Lists any card that should reopen
-- [ ] L-61 Gate VI-1: Layered switch logic | model: opus | autopilot | Level card | phase 3 | deps: L-56 | est: 55K tokens, 1.5 Claude h, 2 h human
-  - Critical-path doc answers every question in spec section 52
-  - Validator finds no dead states and bots find no softlocks
-  - Safe, standard, and expert routes, with optional treasure never required
-  - First-time, experienced, and adversarial playtests pass
-  - Difficulty lands in the gate's target range (6–8 of 10)
-- [ ] L-62 Gate VI-2: Enemies as tools | model: opus | autopilot | Level card | phase 3 | deps: L-61 | est: 55K tokens, 1.5 Claude h, 2 h human
-  - Critical-path doc answers every question in spec section 52
-  - Validator finds no dead states and bots find no softlocks
-  - Safe, standard, and expert routes, with optional treasure never required
-  - First-time, experienced, and adversarial playtests pass
-  - Difficulty lands in the gate's target range (6–8 of 10)
-- [ ] L-63 Gate VI-3: Collapsing routes on timers | model: opus | autopilot | Level card | phase 3 | deps: L-62 | est: 55K tokens, 1.5 Claude h, 2 h human
-  - Critical-path doc answers every question in spec section 52
-  - Validator finds no dead states and bots find no softlocks
-  - Safe, standard, and expert routes, with optional treasure never required
-  - First-time, experienced, and adversarial playtests pass
-  - Difficulty lands in the gate's target range (6–8 of 10)
-- [ ] L-64 Gate VI-4: Multi-room block logistics | model: opus | autopilot | Level card | phase 3 | deps: L-63 | est: 55K tokens, 1.5 Claude h, 2 h human
-  - Critical-path doc answers every question in spec section 52
-  - Validator finds no dead states and bots find no softlocks
-  - Safe, standard, and expert routes, with optional treasure never required
-  - First-time, experienced, and adversarial playtests pass
-  - Difficulty lands in the gate's target range (6–8 of 10)
-- [ ] L-65 Gate VI-5: Expert treasure gauntlet | model: opus | autopilot | Level card | phase 3 | deps: L-64 | est: 55K tokens, 1.5 Claude h, 2 h human
-  - Critical-path doc answers every question in spec section 52
-  - Validator finds no dead states and bots find no softlocks
-  - Safe, standard, and expert routes, with optional treasure never required
-  - First-time, experienced, and adversarial playtests pass
-  - Difficulty lands in the gate's target range (6–8 of 10)
-- [ ] L-66 Gate VI-6: Mastery | model: opus | autopilot | Level card | phase 3 | deps: L-65 | est: 65K tokens, 1.5 Claude h, 2 h human
-  - Critical-path doc answers every question in spec section 52
-  - Validator finds no dead states and bots find no softlocks
-  - Safe, standard, and expert routes, with optional treasure never required
-  - First-time, experienced, and adversarial playtests pass
-  - Difficulty lands in the gate's target range (6–8 of 10)
-- [ ] Q-06 Gate VI sweep report | model: haiku | autopilot | QA card | phase 3 | deps: L-66 | est: 15K tokens, 0.5 Claude h, 0 h human
-  - Validator and bot results for every level built so far
-  - Deaths by cause and difficulty against each gate's target
+- [ ] Q-06 Gate VI sweep report | model: haiku | autopilot | QA card | phase 3 | deps: L-65 | est: 15K tokens, 0.5 Claude h, 0 h human
+  - Validator and bot results for every level in the gate
+  - Deaths by cause and difficulty against the gate's target
   - Lists any card that should reopen
-- [ ] L-71 Gate VII-1: The descent | model: opus | autopilot | Level card | phase 3 | deps: L-66 | est: 60K tokens, 1.5 Claude h, 2 h human
-  - Critical-path doc answers every question in spec section 52
-  - Validator finds no dead states and bots find no softlocks
-  - Safe, standard, and expert routes, with optional treasure never required
-  - First-time, experienced, and adversarial playtests pass
-  - Difficulty lands in the gate's target range (8–10 of 10)
-- [ ] L-72 Gate VII-2: Water, blocks, and timers | model: opus | autopilot | Level card | phase 3 | deps: L-71 | est: 60K tokens, 1.5 Claude h, 2 h human
-  - Critical-path doc answers every question in spec section 52
-  - Validator finds no dead states and bots find no softlocks
-  - Safe, standard, and expert routes, with optional treasure never required
-  - First-time, experienced, and adversarial playtests pass
-  - Difficulty lands in the gate's target range (8–10 of 10)
-- [ ] L-73 Gate VII-3: Guardian maze | model: opus | autopilot | Level card | phase 3 | deps: L-72 | est: 65K tokens, 1.5 Claude h, 2 h human
-  - Critical-path doc answers every question in spec section 52
-  - Validator finds no dead states and bots find no softlocks
-  - Safe, standard, and expert routes, with optional treasure never required
-  - First-time, experienced, and adversarial playtests pass
-  - Difficulty lands in the gate's target range (8–10 of 10)
-- [ ] L-74 Gate VII-4: Seal chamber | model: opus | autopilot | Level card | phase 3 | deps: L-73 | est: 65K tokens, 1.5 Claude h, 2 h human
-  - Critical-path doc answers every question in spec section 52
-  - Validator finds no dead states and bots find no softlocks
-  - Safe, standard, and expert routes, with optional treasure never required
-  - First-time, experienced, and adversarial playtests pass
-  - Difficulty lands in the gate's target range (8–10 of 10)
-- [ ] L-75 Gate VII-5: Final level | model: opus | autopilot | Level card | phase 3 | deps: L-74, S-11 | est: 100K tokens, 2.5 Claude h, 3 h human
-  - No new mechanics; it combines everything already taught
-  - Critical-path doc answers every question in spec section 52
-  - Validator finds no dead states and bots find no softlocks
-  - Safe, standard, and expert routes, with optional treasure never required
-  - First-time, experienced, and adversarial playtests pass
-  - Difficulty lands in the gate's target range (8–10 of 10)
-  - Ends with the completion sequence and unlocks New Game+
-- [ ] Q-07 Gate VII sweep and full critical-path audit | model: haiku | autopilot | QA card | phase 3 | deps: L-75 | est: 20K tokens, 0.5 Claude h, 0 h human
-  - Validator and bots across all 37 levels
-  - Every critical path matches its doc
+- [ ] Q-07 Gate VII sweep report | model: haiku | autopilot | QA card | phase 3 | deps: L-73 | est: 15K tokens, 0.5 Claude h, 0 h human
+  - Validator and bot results for every level in the gate
+  - Deaths by cause and difficulty against the gate's target
   - Lists any card that should reopen
-- [ ] B-01 Whole-game softlock hunt | model: opus | autopilot | QA card | phase 3 | deps: Q-07, S-10 | est: 55K tokens, 1.5 Claude h, 0 h human
-  - Bots run all 37 levels in all three modes
-  - Every finding is fixed or filed as a card
-- [ ] R-03 Phase 3 review and retro | model: human+opus | needs-you | QA card | phase 3 | deps: B-01 | est: 10K tokens, 0.5 Claude h, 2 h human
-  - Complete run on your phone
-  - Difficulty curve matches the spec's targets
-  - Estimates and model routing adjusted
-- [ ] N-01 New Game+ cycles and difficulty cap | model: sonnet | autopilot | Systems card | phase 4 | deps: S-11 | est: 40K tokens, 0.5 Claude h, 0 h human
-  - The first New Game+ gate is about 10% harder, then follows the section 32 curve
-  - Difficulty stops rising at the cap
-  - Carries over the right progression
-- [ ] N-02 Six New Game+ modifiers | model: sonnet | autopilot | Systems card | phase 4 | deps: N-01 | est: 45K tokens, 1 Claude h, 0 h human
-  - Each modifier works on any level
-  - One to three per level, never all at once
-- [ ] N-03 New Game+ visual variants | model: sonnet | autopilot | Art card | phase 4 | deps: N-01, A-03 | est: 30K tokens, 0.5 Claude h, 0.5 h human
-  - Palette, torch color, lighting, symbol, and enemy accent changes
-  - Players still recognize every place
-- [ ] N-04 Seeded generate, validate, and discard | model: opus | autopilot | Tooling card | phase 4 | deps: N-02, T-04 | est: 50K tokens, 1.5 Claude h, 0 h human
-  - Every variation has a seed QA can replay
-  - Invalid configurations are discarded before play
-  - No unvalidated configuration can reach a release build
-- [ ] N-05 New Game+ modifiers for all 36 levels | model: sonnet | autopilot | Level card | phase 4 | deps: N-04, B-01 | est: 45K tokens, 1 Claude h, 4 h human
-  - One to three modifiers per level on the New Game+ curve
-  - The validator passes every level and modifier combination
-  - Experienced-player spot check for each gate
-- [ ] N-06 Expert challenges | model: sonnet | autopilot | Systems card | phase 4 | deps: S-11, S-12 | est: 30K tokens, 0.5 Claude h, 0 h human
-  - All five challenges tracked and unlocked after completion
-  - Kept separate from normal progression
-- [ ] Q-08 New Game+ sweep | model: haiku | autopilot | QA card | phase 4 | deps: N-05 | est: 20K tokens, 0.5 Claude h, 0 h human
-  - Every failure is logged with its seed
-  - The report opens as a pull request
-- [ ] R-04 New Game+ playtest and retro | model: human+opus | needs-you | QA card | phase 4 | deps: Q-08 | est: 10K tokens, 0.5 Claude h, 2 h human
-  - One level per gate played in New Game+
-  - Modifier balance adjusted
-- [ ] X-01 Accessibility and settings polish | model: sonnet | autopilot | Platform card | phase 5 | deps: U-01 | est: 25K tokens, 0.5 Claude h, 0.5 h human
-  - Full remapping for touch and controller
-  - Text size and reduced-flashing options
-  - Colorblind check on every palette
-- [ ] X-02 Performance and memory pass | model: opus | autopilot | Platform card | phase 5 | deps: R-04 | est: 30K tokens, 1 Claude h, 1 h human
-  - 60 fps in the heaviest New Game+ room on your phone
-  - No memory growth over a two-hour session
+- [ ] B-01 Whole-game dead-state hunt | model: opus | autopilot | QA card | phase 3 | deps: Q-07, S-10 | est: 55K tokens, 1.5 Claude h, 0 h human
+  - Bots run every level under every assist combination
+  - No dead state, no clipping jump, no frame-perfect required passage
+- [ ] S-10 Difficulty modes and assists | model: sonnet | autopilot | Systems card | phase 3 | deps: S-26 | est: 35K tokens, 0.5 Claude h, 0 h human
+  - Assists make a level easier to execute, never change its solution
+  - A level is validated without assists; assists open no route the proof did not cover
+- [ ] S-11 Completion screen, stats, and rank | model: sonnet | autopilot | Systems card | phase 3 | deps: S-26 | est: 25K tokens, 0.5 Claude h, 0 h human
+  - Time, deaths and jewels shown per level and per gate
+- [ ] A-02 Art for Gates II-IV | model: sonnet | autopilot | Art card | phase 2 | deps: A-01 | est: 40K tokens, 0.5 Claude h, 0.5 h human
+  - Palette and tileset per gate, darker as they descend
+- [ ] A-03 Art for Gates V-VII and the finale | model: sonnet | autopilot | Art card | phase 3 | deps: A-02 | est: 40K tokens, 0.5 Claude h, 0.5 h human
+  - Palette and tileset per gate through the last
+- [ ] U-02 Sound effects and ambient music | model: sonnet | autopilot | Platform card | phase 3 | deps: S-26 | est: 35K tokens, 0.5 Claude h, 0.5 h human
+  - Jump, land, climb, collect, gate open, axe strike, block break, death
+  - One ambient loop per gate
+- [ ] T-05 Level editor | model: sonnet | autopilot | Tooling card | phase 2 | deps: F-05, T-20 | est: 60K tokens, 1 Claude h, 1 h human
+  - Place tiles, jewels, guardians and their routes, and axes
+  - Runs the validator on the level before it can be saved
+- [ ] T-06 Difficulty and death analytics | model: sonnet | autopilot | Tooling card | phase 2 | deps: T-03 | est: 30K tokens, 0.5 Claude h, 0 h human
+  - Deaths by cause and by tile, per level, from bot runs
+- [ ] N-01 New Game+ cycles | model: sonnet | autopilot | Systems card | phase 4 | deps: S-11 | est: 40K tokens, 0.5 Claude h, 0 h human
+  - Same levels, seeded jewel and guardian placements
+- [ ] N-02 New Game+ modifiers | model: sonnet | autopilot | Systems card | phase 4 | deps: N-01 | est: 45K tokens, 1 Claude h, 0 h human
+  - No axe, one life, speed run
+- [ ] N-03 New Game+ visual variants | model: sonnet | autopilot | Systems card | phase 4 | deps: N-01, A-03 | est: 30K tokens, 0.5 Claude h, 0.5 h human
+  - Alternate palettes and skins per gate
+- [ ] N-04 Seeded generate, validate, and discard | model: opus | autopilot | Systems card | phase 4 | deps: N-02, T-20 | est: 50K tokens, 1.5 Claude h, 0 h human
+  - A seeded variant that cannot be proven is discarded and reseeded, never shipped
+- [ ] X-01 Accessibility and settings polish | model: sonnet | autopilot | Release card | phase 5 | deps: U-01 | est: 25K tokens, 0.5 Claude h, 0.5 h human
+  - Text size, high contrast, colourblind modes
+  - Guardians and hazards differ in shape, not only colour
+- [ ] X-02 Performance and memory pass | model: opus | autopilot | Release card | phase 5 | deps: N-04 | est: 30K tokens, 1 Claude h, 1 h human
+  - 60 FPS held through the worst level
 - [ ] X-03 Release build | model: sonnet | autopilot | Release card | phase 5 | deps: X-02 | est: 15K tokens, 0.5 Claude h, 0 h human
-  - QA tools stripped, checked by a test
-  - Only certified levels included
+  - Debug tooling absent, checked by a test
 - [ ] X-04 Final certification audit | model: haiku | autopilot | Release card | phase 5 | deps: X-03 | est: 20K tokens, 0.5 Claude h, 2 h human
-  - The report covers each section 51 requirement with evidence
-  - You sign off
-- [ ] X-05 App Store and Play Store wrapper (optional, paid) | model: sonnet | needs-you | Release card | phase 5 | deps: X-03 | est: 40K tokens, 1 Claude h, 3 h human
-  - Capacitor builds for iOS and Android
-  - Controller haptics where supported
-  - Needs paid Apple and Google developer accounts, and a Mac or cloud build service for iOS
-- [ ] X-06 Native TV app spike (optional) | model: opus | autopilot | Release card | phase 5 | deps: X-03 | est: 25K tokens, 0.5 Claude h, 1 h human
-  - Compare tvOS, Android TV, and mirroring only
-  - A recommendation with an effort estimate
+  - Every shipped level certified and its critical-path doc complete
 - [ ] X-07 Launch playtest on phone and TV | model: human | needs-you | Release card | phase 5 | deps: X-04 | est: 0K tokens, 0 Claude h, 6 h human
   - Full run with a controller on the TV
   - Full run with touch on your phone
@@ -458,15 +351,53 @@ Empty
 
 ## Certified
 
-- [x] F-02 Repo scaffold, CI, and test runners | model: sonnet | autopilot | Foundation card | phase 1 | deps: F-01 | est: 20K tokens, 0.5 Claude h, 0 h human
-  - npm test, npm run e2e, and npm run build work locally and in CI
-  - Browser tests run at a phone-sized landscape viewport
-  - Everything also passes in the Claude Code cloud environment routines use
-- [x] F-04 Playable build on your phone after every merge | model: sonnet | autopilot | Foundation card | phase 1 | deps: F-02 | est: 15K tokens, 0.5 Claude h, 0.5 h human
-  - Every merge to develop deploys automatically — Cloudflare Pages connected directly to the repo (production branch develop, build command npm run build, output directory dist, NODE_VERSION 22); live at https://innana-seven-gates.pages.dev/
-  - Free plan, git-connected build (see docs/deploy-cloudflare.md for the build-count caveat and the unused direct-upload alternative already sitting in CI)
-  - You connected a free Cloudflare account
 - [x] F-01 Architecture decision and CLAUDE.md rules | model: opus | autopilot | Foundation card | phase 1 | deps: none | est: 40K tokens, 1 Claude h, 1 h human
   - Decision record covers engine, input, level model, and test strategy
   - CLAUDE.md encodes the deadlock rules from docs/SPEC.md, the Definition of Done, and the board workflow
   - Lands in Human QA for your review while build cards continue
+  > v2: ADR-001 survives in full - stack, engine-free core, layout, commands, CI and the input architecture are not top-down-specific. Criterion 2 no longer holds, because CLAUDE.md still encodes v1 mechanics; card F-06 fixes that rather than un-certifying this one.
+- [x] F-02 Repo scaffold, CI, and test runners | model: sonnet | autopilot | Foundation card | phase 1 | deps: F-01 | est: 20K tokens, 0.5 Claude h, 0 h human
+  - npm test, npm run e2e, and npm run build work locally and in CI
+  - Browser tests run at a phone-sized landscape viewport
+  - Everything also passes in the Claude Code cloud environment routines use
+  > v2: survives unchanged. Nothing in it assumed the game's genre.
+- [x] F-04 Playable build on your phone after every merge | model: sonnet | autopilot | Foundation card | phase 1 | deps: F-02 | est: 15K tokens, 0.5 Claude h, 0.5 h human
+  - Every merge to develop deploys automatically - Cloudflare Pages connected directly to the repo (production branch develop, build command npm run build, output directory dist, NODE_VERSION 22); live at https://innana-seven-gates.pages.dev/
+  - Free plan, git-connected build (see docs/deploy-cloudflare.md for the build-count caveat)
+  - You connected a free Cloudflare account
+  > v2: survives unchanged.
+- [x] S-20 Platformer core: side view, tiles, integer scaling | model: sonnet | autopilot | Systems card | phase 1 | deps: F-02 | est: 45K tokens, 1 Claude h, 0 h human
+  - 16x16 tiles rendered at a whole-number scale, letterboxed into 16:9, no filtering
+  - One screen per level, fixed camera, no scrolling and no camera movement
+  - Two-frame animation at 8fps, driven by the fixed-timestep clock
+  - Same inputs always produce the same state
+  > Merged as f133b87; Actions run 35438875350 green (test + e2e jobs both passed, 12/12 e2e). Not wired into the menu flow yet — F-05's schema and S-21's movement haven't landed, so main.ts only exposes the scene as a test hook (mountPlatformGame on window). S-21, S-25 and S-23 build on this next.
+
+---
+
+## Void (v1)
+
+Cards written against v1's top-down model. Kept for the record, not for work. None is startable; each names its v2 replacement where there is one. See docs/DECISIONS.md D-005.
+
+- **F-03** Level data schema and loader — Schema is v1: tiles, pushable blocks, doors, carried items, safe/standard/expert routes. Replaced by: F-05.
+- **S-01** Game loop, tile collision, and camera — Built top-down with room transitions and a camera that follows across rooms. Replaced by: S-20.
+- **S-02** Player movement and feel — Coyote time, jump buffer and variable jump height contradict SPEC 13's single fixed arc. Replaced by: S-21.
+- **S-03** Core mechanics — Entity set was blocks, keys, doors and carried items. Replaced by: S-23, S-24.
+- **S-04** Checkpoints, safe saves, and room reset — Room reset and inventory-bearing checkpoints. Replaced by: S-26.
+- **S-05** Trapped-player detection and item recovery — No carried items to recover; being trapped is impossible under SPEC 8. Replaced by: none.
+- **S-06** Push blocks and block reset — There is no pushing in v2. Replaced by: S-24.
+- **S-07** Traps: spikes, collapsing floors, and darts — Only spikes survive, and they are part of the level schema. Replaced by: F-05.
+- **S-08** Enemy behaviors: patrol, chaser, and guardian — A chaser reacts to the player, which SPEC 16 forbids outright. Replaced by: S-25.
+- **S-09** Timed mechanisms and water — No timed mechanisms and no water in v2. Replaced by: none.
+- **S-12** Throwing dagger — Replaced by the axe as a limited-use tool. Replaced by: S-24.
+- **T-01** Solvability validator v1 — Proves a top-down state graph with inventory and switch states. Replaced by: T-20.
+- **T-04** Validator v2: push-block deadlocks — Proves push-block deadlocks; v2 breaks blocks rather than pushing them. Replaced by: T-20, T-21, T-22.
+- **N-05** New Game+ modifiers for all 36 levels — Depended on the v1 level set. Replaced by: N-02.
+- **N-06** Expert challenges — Built on v1 routes and timers. Replaced by: none.
+- **X-05** App Store and Play Store wrapper — Deferred with the rest of Phase 5; unchanged in substance but re-cut with the v2 release cards. Replaced by: X-03.
+- **X-06** Native TV app spike — Same. Replaced by: X-03.
+- **R-02** Phase 2 review and retro — Re-cut against the v2 phase boundaries. Replaced by: R-01.
+- **R-03** Phase 3 review and retro — Same. Replaced by: R-01.
+- **R-04** New Game+ playtest and retro — Same. Replaced by: R-01.
+- **Q-08** New Game+ sweep — Re-cut with the v2 sweep cards. Replaced by: Q-07.
+- **L-xx** All 37 v1 level cards — Every one assumed keys, doors, pushable blocks, pressure plates, torches or water. Replaced by: the v2 L-xx cards above.
