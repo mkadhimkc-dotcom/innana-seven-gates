@@ -34,8 +34,8 @@ past guardians whose patrols they have learned. The pleasure is the same as
 to be done in, then becomes easy.
 
 Deadlock-free: every level is always completable from the current state.
-Checkpoints with safe-state recovery prevent soft-locks. Death is cheap and
-frequent by design in later gates; being stuck is never possible.
+Death restarts the level. It is cheap and frequent by design in later gates;
+being stuck is never possible.
 
 ## 4. Target audience
 Players who like *King's Valley*, *Lode Runner*, *Solomon's Key* and *Montezuma's
@@ -77,9 +77,9 @@ proves: from every reachable non-death state, there exists a path that collects
 every remaining jewel and reaches the gate.
 
 "The intended route works" is not the bar. "No reachable state is dead" is the
-bar. Death is not a deadlock — death returns the player to a safe checkpoint
-(§10) and is always recoverable. A dead *state* is one the player can still act
-in and can never finish from.
+bar. Death is not a deadlock — death restarts the level from its start state
+(§10), which is completable by construction. A dead *state* is one the player
+can still act in and can never finish from.
 
 ## 9. Level structure
 Each level is a single screen, no scrolling:
@@ -89,17 +89,47 @@ Each level is a single screen, no scrolling:
 - **Optional jewels do not exist.** Every jewel in the room is required; that is
   what makes "collect them all" a complete statement of the goal.
 
-## 10. Checkpoints and death
-Contact with a guardian or a spike kills the player. Death costs the attempt's
-progress back to the last checkpoint, never the level.
+**Level budget.** The state graph in §18 is a product of these counts, so they
+are capped and the validator refuses a level that exceeds them:
 
-A checkpoint stores the player's cell, the jewels collected, the blocks broken
-and the axe uses remaining, and it is written **only when the validator confirms
-the level is still completable from that state**. If no checkpoint has been
-written, death restarts the level from its start state, which is completable by
-construction.
+| Thing | Cap | Why |
+| --- | --- | --- |
+| Jewels | 8 | collected-set is 2^n |
+| Breakable blocks | 10 | broken-set is 2^n, and they are irreversible |
+| Guardians | 4 | killed-set is 2^n, and each adds to the phase |
+| Axe uses | 4 | a counter, cheap, but it multiplies everything else |
+| Grid | 32 × 24 tiles | at 16×16 this is already wider than 16:9 |
 
-The player can always restart the level deliberately from the pause menu.
+These are not style guidance. A level over budget is a validation failure, for
+the same reason a truncated search is: the proof has to finish.
+
+## 10. Death and restart
+Contact with a guardian or a spike kills the player. **Death restarts the level
+from its start state.** There are no in-level checkpoints.
+
+Everything an attempt accumulated is undone: jewels collected, blocks broken,
+axe uses spent, guardians killed. The level returns to exactly the state it was
+loaded in, and the guardian cycle restarts at phase zero.
+
+This is deliberate, and it is a proof decision before it is a design one.
+
+- **The start state is completable by construction**, so a restart can never
+  strand the player. No separate proof is needed for it.
+- **A mid-level checkpoint would need the guardian phase saved with it.** Restore
+  progress but reset the cycle to zero and you create a state — these jewels,
+  these blocks broken, this phase — that the validator never explored, because
+  it is not reachable from the level start. That state can be dead while the
+  level still certifies. Saving the phase avoids the hole but makes respawn
+  visibly teleport the guardians, and adds the phase to the save format.
+- **It keeps the state space at its minimum**, which matters: §18's graph is
+  already the largest thing in the project, and the budget in §19 is one minute.
+- It is the idiom. *King's Valley* restarts the screen. A level is one screen
+  and a successful run is well under a minute even at Gate VII; the §25 targets
+  measure first-time completion including the deaths, not one flawless run.
+
+The player can always restart deliberately from the pause menu. Assists (§35)
+may make a level easier to execute but may never introduce a checkpoint, because
+a checkpoint is a state the proof did not cover.
 
 ## 11. Gate transitions
 Entering the open gate ends the level. Nothing carries between levels: jewels,
@@ -135,8 +165,7 @@ fixed arc. Guardians do not use ladders unless their route says so (§16).
 
 ## 15. Breakable blocks and the axe
 Some blocks are **breakable**. Breaking one removes it permanently **for that
-attempt** — until death returns the player to a checkpoint or the level start,
-which restores the level's blocks to that saved state.
+attempt** — until death restarts the level, which restores every block.
 
 Breaking requires an **axe or chisel**, found in the level, with a **limited
 number of uses**. One use either:
@@ -157,8 +186,17 @@ elapsed since the level started, and its cycle is finite. The solvability proof
 depends on this; a guardian that reacts to the player makes the state space
 unprovable, and any such proposal is a spec violation, not a design option.
 
+**All guardian cycles in a level must divide a single declared level period**,
+and that period may not exceed 256 frames. Without this the combined phase is
+the lowest common multiple of the individual cycles — three guardians on cycles
+of 7, 11 and 13 frames give a combined cycle of 1001, and four coprime cycles
+can give tens of thousands. With it, guardian phase is one integer in
+`0..period-1` and the graph stays finite in a useful sense rather than only in
+a theoretical one. The validator refuses a level whose guardian cycles do not
+divide its declared period.
+
 A guardian can be killed with one axe use. A killed guardian stays dead for that
-attempt.
+attempt, and a dead guardian's phase stops mattering.
 
 ## 17. Visual theme
 Mesopotamian: clay brick walls, carved stone, cuneiform friezes. Palette of
@@ -169,16 +207,52 @@ form. Guardians are distinct in shape at 16×16, never only in colour (§32).
 ## 18. Validator: solvability proof (v2)
 For each level the validator builds a state graph.
 
-**A state is:**
-- player cell
-- vertical state: grounded, airborne with its phase within the fixed arc, or climbing
-- jewels collected
-- blocks broken
-- axe uses remaining
-- guardian phase (the tick within the guardians' combined cycle)
+**A state is exactly these nine components. Nothing else, and nothing fewer:**
 
-Every one of those is finite and every cycle is finite, so the state space is
+| # | Component | Range |
+| --- | --- | --- |
+| 1 | Player cell | grid, ≤ 32×24 |
+| 2 | Facing | left or right |
+| 3 | Vertical state | `grounded`, `climbing`, `jumping(frame, dx)`, or `falling(frame, dx)` |
+| 4 | Jewels collected | bitmask, ≤ 8 |
+| 5 | Blocks broken | bitmask, ≤ 10 |
+| 6 | Guardians killed | bitmask, ≤ 4 |
+| 7 | Axe pickups collected | bitmask |
+| 8 | Axe uses remaining | 0..4 |
+| 9 | Guardian phase | `0..period-1`, period ≤ 256 |
+
+Every component is finite and every cycle is finite, so the state space is
 finite and the graph terminates.
+
+Four of these are easy to leave out and fatal to leave out:
+
+- **Guardians killed (6)** is not derivable from axe uses spent — a use may have
+  broken a block instead. Omit it and the graph treats a killed guardian as
+  still patrolling, so the proof is over a harder game than the one being
+  played, and levels that are fine will fail to certify while the real reachable
+  set goes unexplored.
+- **Facing (2)** matters because the axe acts on the tile the player faces.
+  Without it, "use axe" is ambiguous and the edge set is wrong.
+- **The airborne sub-state (3)** must carry both the frame index *and* the
+  horizontal direction the jump or fall began with, and must distinguish
+  jumping from falling — they have different vertical profiles, and a fall
+  entered by walking off a ledge is not a jump with its rise removed.
+- **Axe pickups collected (7)** is distinct from uses remaining (8). Zero uses
+  because the axe was never picked up is a different state from zero uses
+  because they were all spent: from the first, picking it up is still available.
+
+**Guardian position is derived, never stored.** It is a pure function of
+`(guardian, phase)`. Storing positions would let two states that are actually
+identical differ, and would admit a guardian whose motion depends on something
+other than the clock — which is what S-08's "chaser" was, and why it was voided
+rather than rewritten.
+
+**Scale.** The naive product of these ranges is astronomical — a 300-cell room
+with 8 jewels, 10 breakable blocks, 4 guardians and a 256-frame period exceeds
+10^14. Only the *reachable* set is explored, and it is many orders smaller, but
+the gap between them is where the one-minute budget in §19 is won or lost. The
+budget in §9 exists to keep that gap survivable, and the validator must use a
+packed integer key rather than a string one.
 
 **Edges** are legal inputs from each state, advanced one simulation step.
 
@@ -275,8 +349,8 @@ Xbox and PlayStation controllers via Bluetooth:
 - Disconnecting mid-game pauses safely
 
 ## 29. Keyboard input (debug only, not in release)
-Arrows: run and climb. Space: jump. Z: use axe. R: restart from checkpoint.
-L: restart level. E: skip level.
+Arrows: run and climb. Space: jump. Z: use axe. R: restart level.
+E: skip level.
 
 ## 30. Camera and viewport
 Fixed camera, one screen per level, no scrolling and no camera movement of any
@@ -303,13 +377,13 @@ New Game+ data stored separately.
 
 ## 34. Menu structure
 - Main menu: start, continue, settings, credits
-- Pause menu: resume, restart from checkpoint, restart level, gate select, settings
+- Pause menu: resume, restart level, gate select, settings
 - Gate select: browse gates, view times and deaths, unlock New Game+
 - Settings: volume, assists, accessibility, controls
 
 ## 35. Assists and difficulty presets
 - No assists: standard rules
-- Assists on: extra checkpoints, slower guardians, extra axe uses
+- Assists on: slower guardians, extra axe uses, longer timing windows
 - Custom: player picks individual assists
 
 Assists may only make a level **easier to execute**, never change its solution.
@@ -338,7 +412,7 @@ Free game, no ads, no in-app purchases. No tracking or telemetry.
 
 ## 40. Testing strategy
 Unit tests: movement, jump arc, collision, guardian cycles, validator, state
-graph. Integration tests: level load, checkpoint write, route completion.
+graph. Integration tests: level load, restart, route completion.
 Playtests: first-time, experienced, adversarial (bots). All three must pass
 before a level ships.
 
@@ -451,8 +525,8 @@ Every level must have a doc answering:
 30. How did validation pass? (reference validator output)
 31. How many states did the validator explore?
 32. How long did validation take? (must be under 1 minute)
-33. Where are checkpoints written?
-34. Is every checkpoint state provably completable? (must be "yes")
+33. How long is one successful run, in seconds?
+34. How many deaths does the intended route cost a learning player?
 35. What is the critical path in pseudocode?
 36. What does the first-time playtest reveal?
 37. What does the experienced playtest reveal?
