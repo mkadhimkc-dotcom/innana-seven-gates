@@ -6,10 +6,6 @@ Cards voided by the v2 rewrite are listed at the foot of this file under **Void 
 
 ## Ready (limit 8)
 
-- [ ] F-06 Rewrite CLAUDE.md against SPEC v2 | model: opus | autopilot | Foundation card | phase 1 | deps: none | est: 30K tokens, 1 Claude h, 0.5 h human
-  - Section 1 restates the v2 deadlock rules (SPEC 8-19), not v1 inventory, pushing, keys or torches
-  - Definition of Done and the board workflow match SPEC 20 and 53 as written in v2
-  - No surviving reference to a void v1 mechanic anywhere in the file
 - [ ] F-05 v2 level schema and loader | model: opus | autopilot | Foundation card | phase 1 | deps: F-02 | est: 45K tokens, 1.5 Claude h, 0 h human
   - JSON Schema covers the 16x16 grid, solid and breakable tiles, ladders, spikes, the gate, jewels, guardians with their routes, and axe pickups with uses
   - The loader rejects a malformed level with a message naming the problem
@@ -372,8 +368,11 @@ Empty
   - Two-frame animation at 8fps, driven by the fixed-timestep clock
   - Same inputs always produce the same state
   > Merged as f133b87; Actions run 35438875350 green (test + e2e jobs both passed, 12/12 e2e). Not wired into the menu flow yet — F-05's schema and S-21's movement haven't landed, so main.ts only exposes the scene as a test hook (mountPlatformGame on window). S-21, S-25 and S-23 build on this next.
-
----
+- [x] F-06 Rewrite CLAUDE.md against SPEC v2 | model: opus | autopilot | Foundation card | phase 1 | deps: none | est: 30K tokens, 1 Claude h, 0.5 h human
+  - Section 1 restates the v2 deadlock rules (SPEC 8-19), not v1 inventory, pushing, keys or torches
+  - Definition of Done and the board workflow match SPEC 20 and 53 as written in v2
+  - No surviving reference to a void v1 mechanic anywhere in the file
+  > Certified: merge commit 940f9ab, Actions run 46 green on both jobs.
 
 ## Void (v1)
 
