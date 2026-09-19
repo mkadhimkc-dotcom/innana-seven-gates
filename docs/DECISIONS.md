@@ -149,3 +149,77 @@ Certification rule in `CLAUDE.md`, restoring "a lane takes a level as far as
 Human QA and stops". Levels already certified under this decision should be
 moved back to Human QA, since none of them will have had the two human
 playtests. `docs/PLAYTEST-QUEUE.md` lists exactly which ones those are.
+
+---
+
+## D-005 — v1's top-down model is void; the game is a side-view platformer
+
+**Decided:** 2026-09-19 · **Raised by:** the owner · **Implemented in:**
+`docs/SPEC.md` v2, `BOARD.md`
+
+The game is a **side-view platformer** in the idiom of Konami's *King's Valley*
+(MSX, 1985): one screen per level, run and jump and climb, collect every jewel
+to open the gate, guardians on fixed patrols that kill on contact, breakable
+blocks and a limited-use axe. It is not, and never was, a top-down grid puzzle.
+
+**Reasoning.** v1 described top-down movement, block pushing, a carried
+inventory and key-and-door locks. That is a different game. Every level, every
+mechanic card and the whole validator model were being built against it, so the
+error compounded with each card certified. Voiding it now costs one engine;
+voiding it after Gate I ships costs the levels too.
+
+### Discarded
+
+| v1 concept | Why it goes |
+| --- | --- |
+| Top-down grid movement | Replaced by side view with gravity (§12–13) |
+| Block **pushing** (v1 §13) | No pushing in v2. Blocks are **broken**, with an axe, permanently |
+| Carried inventory, 3-item cap, drop-oldest (v1 §12) | No inventory. Jewels are collected, not carried; the axe is a use counter |
+| Keys and doors (v1 §14) | No locks. The gate opens when the last jewel is taken (§7) |
+| Torches and lighting (v1 §15) | Gone. Darkness is aesthetic, not mechanical |
+| Safe / standard / expert routes and timers (v1 §9, §16) | One route standard per level. Death, not the clock, is the pressure |
+| Optional treasure (v1 §9) | Every jewel is required; that is what makes "collect them all" complete |
+| Room transitions carrying inventory (v1 §11) | Nothing carries between levels (§11). Each level proves in isolation |
+| Isometric 3/4 camera with smooth pan (v1 §30) | Fixed camera, one screen, integer scaling, no movement (§12, §30) |
+
+### Kept
+
+- **The deadlock-free guarantee and its language** (v1 §8 → v2 §8), restated
+  against the v2 goal: from every reachable non-death state the player can still
+  collect the remaining jewels and reach the gate. "No reachable state is dead"
+  is still the bar.
+- **The validator as a merge gate** — `npm run validate` is still not advisory,
+  a truncated search is still a failure, and a level that cannot be proven does
+  not ship.
+- Seven gates, ~37 levels, the Inanna descent narrative and the regalia
+  progression (§6, §21).
+- Mesopotamian palette and theme (§17), now at 16×16.
+- Platform and delivery in full: TypeScript, Phaser 3, PWA, Cloudflare Pages,
+  touch / controller / keyboard (§2).
+- Definition of Done, playtest rubric, certification bar, PR quality bar, build
+  and deployment, the critical-path doc discipline and the board workflow
+  (§20, §48–53).
+- The architecture in ADR-001: engine-free `src/core/`, the `src/` layout, the
+  four commands, CI. None of it was top-down-specific.
+
+### New in v2 that has no v1 ancestor
+
+Fixed jump arc with no variable height (§13) · ladders (§14) · breakable blocks
+and limited axe uses (§15) · deterministic guardians (§16) · jump-clearance
+proof (§19) · timing-margin floor per gate (§19, §25) · Gate I's
+no-repeated-deaths rule (§25).
+
+**Section numbers 20 and 24–53 keep their v1 meanings**, so references to
+SPEC 20, 25, 31, 48, 49, 50, 51, 52 and 53 elsewhere in the repo remain correct.
+Sections 7–19 are the rewrite, and anything citing SPEC 12–16 for inventory,
+blocks, keys or torches is citing a void rule.
+
+**How to reverse.** Restore `docs/SPEC.md` from `2072028` and revert the board.
+Reversing is only sensible before any v2 level ships; after that the levels
+encode v2 geometry and would have to be rebuilt too.
+
+**Consequence for `CLAUDE.md`.** Its §1 "Deadlock rules" restates v1 §12–§16 —
+inventory limits, block pushing, keys and doors, torches. Those subsections are
+now void. The file still correctly says SPEC wins where they disagree, but it
+should be rewritten against v2 before lanes resume; until then a lane reading it
+will implement mechanics this game does not have.

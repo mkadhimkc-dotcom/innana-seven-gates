@@ -9,6 +9,14 @@ green, keep the queue full, pick a card, prove it, merge it, and certify it.
 This file is the rules a lane works within; LANE.md is the order it does things
 in.
 
+> **⚠ Sections 1 and 2 of this file are being rewritten for SPEC v2.**
+> v2 makes this a side-view platformer (jewels, guardians, breakable blocks, a
+> limited-use axe). Section 1 below still restates v1's inventory limits, block
+> pushing, keys, doors and torches — **all void**. Read `docs/SPEC.md` v2 and
+> `docs/DECISIONS.md` D-005 instead, and do not implement a mechanic from
+> section 1 until card **F-06** has rewritten it. The deadlock-free guarantee
+> itself survives; the mechanics it is stated over do not.
+
 `docs/SPEC.md` is the source of truth. Where this file and SPEC disagree, SPEC
 wins and this file is the bug — except where `docs/DECISIONS.md` records the
 owner deciding otherwise. Section numbers below refer to SPEC.
